@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 单词统计工具</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #16213e;
+            --accent: #e94560;
+            --accent-glow: rgba(233, 69, 96, 0.4);
+            --text-primary: #eaeaea;
+            --text-secondary: #a0a0a0;
+            --border: #2a2a4a;
+            --success: #00d9a0;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            background-image: 
+                radial-gradient(ellipse at 20% 0%, rgba(233, 69, 96, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 100%, rgba(0, 217, 160, 0.1) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #ff6b8a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .upload-zone {
+            background: var(--bg-secondary);
+            border: 2px dashed var(--border);
+            border-radius: 16px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--accent-glow), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .upload-zone:hover::before,
+        .upload-zone.dragover::before {
+            opacity: 0.1;
+        }
+
+        .upload-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-icon svg {
+            width: 100%;
+            height: 100%;
+            stroke: var(--accent);
+            fill: none;
+            stroke-width: 1.5;
+        }
+
+        .upload-text {
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-text h3 {
+            font-size: 1.3rem;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .upload-text p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .upload-text span {
+            color: var(--accent);
+            text-decoration: underline;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-info {
+            margin-top: 30px;
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border-radius: 10px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .file-info.show {
+            display: flex;
+        }
+
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: white;
+            fill: none;
+        }
+
+        .file-details {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 500;
+            margin-bottom: 2px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+        }
+
+        .file-size {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .loading {
+            margin-top: 40px;
+            text-align: center;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            color: var(--text-secondary);
+        }
+
+        .results {
+            margin-top: 40px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .results-header h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .success-badge {
+            background: var(--success);
+            color: var(--bg-primary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-card.primary {
+            background: linear-gradient(135deg, var(--accent), #ff6b8a);
+            border: none;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-card.primary .stat-label {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-card.primary .stat-value {
+            color: white;
+        }
+
+        .top-words {
+            margin-top: 30px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .top-words h3 {
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+
+        .word-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .word-tag {
+            background: var(--bg-secondary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .word-count {
+            background: var(--accent);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .error {
+            margin-top: 30px;
+            background: rgba(233, 69, 96, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 10px;
+            padding: 16px 20px;
+            color: var(--accent);
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .upload-zone {
+                padding: 40px 20px;
+            }
+
+            .stat-value {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PDF 单词统计</h1>
+            <p class="subtitle">上传 PDF / EPUB 文件，快速统计单词数量</p>
+        </header>
+
+        <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+            </div>
+            <div class="upload-text">
+                <h3>拖拽 PDF / EPUB 文件到这里</h3>
+                <p>或者 <span>点击选择文件</span></p>
+            </div>
+            <input type="file" id="fileInput" accept=".pdf,.epub,application/pdf,application/epub+zip">
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <div class="file-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+            </div>
+            <div class="file-details">
+                <div class="file-name" id="fileName"></div>
+                <div class="file-size" id="fileSize"></div>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>正在解析 PDF 文件...</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="results" id="results">
+            <div class="results-header">
+                <h2>统计结果</h2>
+                <span class="success-badge">完成</span>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card primary">
+                    <div class="stat-label">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 7V4h16v3"/>
+                            <path d="M9 20h6"/>
+                            <path d="M12 4v16"/>
+                        </svg>
+                        英文单词
+                    </div>
+                    <div class="stat-value" id="wordCount">0</div>
+                </div>
+                <div class="stat-card primary">
+                    <div class="stat-label">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M5 4h14"/>
+                            <path d="M12 4v16"/>
+                            <path d="M8 20h8"/>
+                            <path d="M6 9h12"/>
+                        </svg>
+                        中文字数
+                    </div>
+                    <div class="stat-value" id="chineseCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="4 7 4 4 20 4 20 7"/>
+                            <line x1="9" y1="20" x2="15" y2="20"/>
+                            <line x1="12" y1="4" x2="12" y2="20"/>
+                        </svg>
+                        总字符数
+                    </div>
+                    <div class="stat-value" id="charCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        <span id="pageLabel">页数</span>
+                    </div>
+                    <div class="stat-value" id="pageCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="6" x2="21" y2="6"/>
+                            <line x1="8" y1="12" x2="21" y2="12"/>
+                            <line x1="8" y1="18" x2="21" y2="18"/>
+                            <line x1="3" y1="6" x2="3.01" y2="6"/>
+                            <line x1="3" y1="12" x2="3.01" y2="12"/>
+                            <line x1="3" y1="18" x2="3.01" y2="18"/>
+                        </svg>
+                        行数
+                    </div>
+                    <div class="stat-value" id="lineCount">0</div>
+                </div>
+            </div>
+
+            <div class="top-words" id="topWords">
+                <h3>高频英文词 TOP 10</h3>
+                <div class="word-list" id="wordList"></div>
+            </div>
+
+            <div class="top-words" id="topChinese">
+                <h3>高频汉字 TOP 10</h3>
+                <div class="word-list" id="chineseList"></div>
+            </div>
+        </div>
+
+        <footer>
+            <p>基于 <a href="https://mozilla.github.io/pdf.js/" target="_blank">PDF.js</a> 构建</p>
+        </footer>
+    </div>
+
+    <script>
+        // 设置 PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const error = document.getElementById('error');
+
+        // 点击上传区域触发文件选择
+        uploadZone.addEventListener('click', () => fileInput.click());
+
+        // 文件选择处理
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // 拖拽事件
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', () => {
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        // 处理文件
+        async function handleFile(file) {
+            const fileName_lower = file.name.toLowerCase();
+            const isPDF = file.type === 'application/pdf' || fileName_lower.endsWith('.pdf');
+            const isEPUB = file.type === 'application/epub+zip' || fileName_lower.endsWith('.epub');
+
+            // 验证文件类型
+            if (!isPDF && !isEPUB) {
+                showError('请上传 PDF 或 EPUB 文件');
+                return;
+            }
+
+            // 显示文件信息
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.classList.add('show');
+
+            // 隐藏之前的结果和错误
+            results.classList.remove('show');
+            error.classList.remove('show');
+
+            // 显示加载状态
+            loading.classList.add('show');
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                let fullText = '';
+                let numPages = 0;
+
+                if (isPDF) {
+                    // 解析 PDF
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    numPages = pdf.numPages;
+
+                    for (let i = 1; i <= numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(' ');
+                        fullText += pageText + '\n';
+                    }
+                } else if (isEPUB) {
+                    // 解析 EPUB
+                    const result = await parseEPUB(arrayBuffer);
+                    fullText = result.text;
+                    numPages = result.chapters;
+                }
+
+                // 统计
+                const stats = analyzeText(fullText);
+                stats.pages = numPages;
+                stats.fileType = isPDF ? 'PDF' : 'EPUB';
+
+                // 显示结果
+                displayResults(stats);
+
+            } catch (err) {
+                console.error('文件解析错误:', err);
+                showError('文件解析失败: ' + err.message);
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        // 解析 EPUB 文件
+        async function parseEPUB(arrayBuffer) {
+            const zip = await JSZip.loadAsync(arrayBuffer);
+            let fullText = '';
+            let chapterCount = 0;
+
+            // 首先尝试读取 container.xml 获取 rootfile
+            let rootfilePath = 'OEBPS/content.opf'; // 默认路径
+            try {
+                const containerXml = await zip.file('META-INF/container.xml')?.async('string');
+                if (containerXml) {
+                    const match = containerXml.match(/full-path="([^"]+)"/);
+                    if (match) {
+                        rootfilePath = match[1];
+                    }
+                }
+            } catch (e) {
+                console.log('无法读取 container.xml，使用默认路径');
+            }
+
+            // 获取 OPF 文件的目录路径
+            const opfDir = rootfilePath.substring(0, rootfilePath.lastIndexOf('/') + 1);
+
+            // 读取 OPF 文件获取内容文件列表
+            let contentFiles = [];
+            try {
+                const opfContent = await zip.file(rootfilePath)?.async('string');
+                if (opfContent) {
+                    // 解析 manifest 中的 HTML/XHTML 文件
+                    const parser = new DOMParser();
+                    const opfDoc = parser.parseFromString(opfContent, 'application/xml');
+                    
+                    // 获取 spine 中的阅读顺序
+                    const spineItems = opfDoc.querySelectorAll('spine itemref');
+                    const manifest = opfDoc.querySelectorAll('manifest item');
+                    
+                    const manifestMap = {};
+                    manifest.forEach(item => {
+                        const id = item.getAttribute('id');
+                        const href = item.getAttribute('href');
+                        const mediaType = item.getAttribute('media-type');
+                        if (mediaType && (mediaType.includes('html') || mediaType.includes('xhtml'))) {
+                            manifestMap[id] = href;
+                        }
+                    });
+
+                    if (spineItems.length > 0) {
+                        spineItems.forEach(item => {
+                            const idref = item.getAttribute('idref');
+                            if (manifestMap[idref]) {
+                                contentFiles.push(opfDir + manifestMap[idref]);
+                            }
+                        });
+                    } else {
+                        // 如果没有 spine，直接使用 manifest 中的所有 HTML 文件
+                        contentFiles = Object.values(manifestMap).map(href => opfDir + href);
+                    }
+                }
+            } catch (e) {
+                console.log('无法解析 OPF 文件:', e);
+            }
+
+            // 如果没有找到内容文件，扫描所有 HTML/XHTML 文件
+            if (contentFiles.length === 0) {
+                zip.forEach((relativePath, file) => {
+                    if (!file.dir && (relativePath.endsWith('.html') || relativePath.endsWith('.xhtml') || relativePath.endsWith('.htm'))) {
+                        contentFiles.push(relativePath);
+                    }
+                });
+                contentFiles.sort();
+            }
+
+            // 提取文本内容
+            for (const filePath of contentFiles) {
+                try {
+                    const content = await zip.file(filePath)?.async('string');
+                    if (content) {
+                        // 从 HTML 中提取纯文本
+                        const text = extractTextFromHTML(content);
+                        if (text.trim()) {
+                            fullText += text + '\n';
+                            chapterCount++;
+                        }
+                    }
+                } catch (e) {
+                    console.log('无法读取文件:', filePath);
+                }
+            }
+
+            return {
+                text: fullText,
+                chapters: chapterCount
+            };
+        }
+
+        // 从 HTML 中提取纯文本
+        function extractTextFromHTML(html) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // 移除 script 和 style 标签
+            doc.querySelectorAll('script, style').forEach(el => el.remove());
+            
+            // 获取 body 文本，如果没有 body 则获取整个文档文本
+            const body = doc.body || doc.documentElement;
+            return body ? body.textContent || '' : '';
+        }
+
+        // 文本分析
+        function analyzeText(text) {
+            // 清理文本
+            const cleanText = text.replace(/\s+/g, ' ').trim();
+            
+            // 统计英文单词 (匹配字母组成的单词)
+            const words = cleanText.match(/\b[a-zA-Z]+\b/g) || [];
+            
+            // 统计中文字符 (匹配所有中文字符，包括常用汉字)
+            const chineseChars = cleanText.match(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/g) || [];
+            
+            // 计算英文词频
+            const wordFreq = {};
+            words.forEach(word => {
+                const lowerWord = word.toLowerCase();
+                wordFreq[lowerWord] = (wordFreq[lowerWord] || 0) + 1;
+            });
+
+            // 计算中文字频
+            const chineseFreq = {};
+            chineseChars.forEach(char => {
+                chineseFreq[char] = (chineseFreq[char] || 0) + 1;
+            });
+
+            // 排序获取高频英文词
+            const sortedWords = Object.entries(wordFreq)
+                .filter(([word]) => word.length > 2) // 过滤掉太短的词
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            // 排序获取高频中文字
+            const sortedChinese = Object.entries(chineseFreq)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            // 统计行数
+            const lines = text.split('\n').filter(line => line.trim().length > 0);
+
+            return {
+                wordCount: words.length,
+                chineseCount: chineseChars.length,
+                charCount: cleanText.length,
+                charCountNoSpaces: cleanText.replace(/\s/g, '').length,
+                lineCount: lines.length,
+                topWords: sortedWords,
+                topChinese: sortedChinese
+            };
+        }
+
+        // 显示结果
+        function displayResults(stats) {
+            document.getElementById('wordCount').textContent = stats.wordCount.toLocaleString();
+            document.getElementById('chineseCount').textContent = stats.chineseCount.toLocaleString();
+            document.getElementById('charCount').textContent = stats.charCount.toLocaleString();
+            document.getElementById('pageCount').textContent = stats.pages;
+            document.getElementById('lineCount').textContent = stats.lineCount.toLocaleString();
+            
+            // 根据文件类型更新标签
+            const pageLabel = document.getElementById('pageLabel');
+            pageLabel.textContent = stats.fileType === 'EPUB' ? '章节数' : '页数';
+
+            // 显示高频英文词
+            const wordList = document.getElementById('wordList');
+            wordList.innerHTML = '';
+            
+            if (stats.topWords.length > 0) {
+                stats.topWords.forEach(([word, count]) => {
+                    const tag = document.createElement('div');
+                    tag.className = 'word-tag';
+                    tag.innerHTML = `${word} <span class="word-count">${count}</span>`;
+                    wordList.appendChild(tag);
+                });
+                document.getElementById('topWords').style.display = 'block';
+            } else {
+                document.getElementById('topWords').style.display = 'none';
+            }
+
+            // 显示高频中文字
+            const chineseList = document.getElementById('chineseList');
+            chineseList.innerHTML = '';
+            
+            if (stats.topChinese.length > 0) {
+                stats.topChinese.forEach(([char, count]) => {
+                    const tag = document.createElement('div');
+                    tag.className = 'word-tag';
+                    tag.innerHTML = `${char} <span class="word-count">${count}</span>`;
+                    chineseList.appendChild(tag);
+                });
+                document.getElementById('topChinese').style.display = 'block';
+            } else {
+                document.getElementById('topChinese').style.display = 'none';
+            }
+
+            results.classList.add('show');
+        }
+
+        // 显示错误
+        function showError(message) {
+            error.textContent = message;
+            error.classList.add('show');
+            loading.classList.remove('show');
+        }
+    </script>
+</body>
+</html>
