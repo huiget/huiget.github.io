@@ -273,6 +273,41 @@
             display: block;
         }
 
+        /* 阅读进度 */
+        .progress-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: #f8f9fa;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #5a6c7d;
+        }
+
+        .progress-indicator .progress-text {
+            font-weight: 600;
+            color: #2c3e50;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        .progress-bar-container {
+            width: 80px;
+            height: 6px;
+            background: #e0e5ea;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            border-radius: 3px;
+            transition: width 0.15s ease-out;
+            width: 0%;
+        }
+
         /* 阅读区域 */
         .reader-container {
             flex: 1;
@@ -470,6 +505,14 @@
             .book-title {
                 display: none;
             }
+
+            .progress-indicator {
+                padding: 6px 10px;
+            }
+
+            .progress-bar-container {
+                width: 50px;
+            }
         }
     </style>
 </head>
@@ -495,6 +538,12 @@
             <div class="toolbar">
                 <button class="toggle-sidebar" id="toggle-sidebar">☰ 目录</button>
                 <span class="book-title" id="book-title">EPUB 阅读器</span>
+                <div class="progress-indicator" id="progress-indicator" style="display: none;">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progress-bar"></div>
+                    </div>
+                    <span class="progress-text" id="progress-text">0%</span>
+                </div>
                 <button class="settings-btn" id="settings-btn">⚙ 设置</button>
                 <label class="upload-btn" for="file-input">📂 打开文件</label>
                 <input type="file" id="file-input" accept=".epub">
@@ -570,6 +619,62 @@
     </div>
 
     <script>
+        // IndexedDB 工具类
+        class BookStorage {
+            constructor() {
+                this.dbName = 'EPUBReaderDB';
+                this.storeName = 'books';
+                this.db = null;
+            }
+
+            async init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, 1);
+                    
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        resolve();
+                    };
+                    
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            db.createObjectStore(this.storeName, { keyPath: 'id' });
+                        }
+                    };
+                });
+            }
+
+            async saveBook(arrayBuffer, fileName) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    
+                    const request = store.put({
+                        id: 'lastBook',
+                        data: arrayBuffer,
+                        fileName: fileName,
+                        timestamp: Date.now()
+                    });
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            async getLastBook() {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readonly');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.get('lastBook');
+                    
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            }
+        }
+
         class EPUBReader {
             constructor() {
                 this.zip = null;
@@ -580,6 +685,9 @@
                 this.toc = [];
                 this.metadata = {};
                 this.chapterElements = [];
+                this.currentFileName = '';
+                this.bookStorage = new BookStorage();
+                this.pendingScrollPosition = null;
                 
                 // 默认设置
                 this.settings = {
@@ -594,6 +702,55 @@
                 this.initEventListeners();
                 this.initSettingsListeners();
                 this.applySettings();
+                this.initStorage();
+            }
+
+            // 初始化存储并尝试加载上次的书籍
+            async initStorage() {
+                try {
+                    await this.bookStorage.init();
+                    await this.loadLastBook();
+                } catch (e) {
+                    console.warn('无法初始化存储:', e);
+                }
+            }
+
+            // 加载上次打开的书籍
+            async loadLastBook() {
+                try {
+                    const lastBook = await this.bookStorage.getLastBook();
+                    if (lastBook && lastBook.data) {
+                        // 获取保存的阅读位置
+                        const savedProgress = localStorage.getItem('epubReaderProgress');
+                        if (savedProgress) {
+                            try {
+                                const progress = JSON.parse(savedProgress);
+                                if (progress.fileName === lastBook.fileName) {
+                                    this.pendingScrollPosition = progress.scrollPosition;
+                                }
+                            } catch (e) {}
+                        }
+                        
+                        this.currentFileName = lastBook.fileName;
+                        await this.loadEPUBFromArrayBuffer(lastBook.data, lastBook.fileName);
+                    }
+                } catch (e) {
+                    console.warn('无法加载上次的书籍:', e);
+                }
+            }
+
+            // 保存阅读进度
+            saveReadingProgress() {
+                if (!this.currentFileName) return;
+                
+                const container = document.getElementById('reader-container');
+                const progress = {
+                    fileName: this.currentFileName,
+                    scrollPosition: container.scrollTop,
+                    timestamp: Date.now()
+                };
+                
+                localStorage.setItem('epubReaderProgress', JSON.stringify(progress));
             }
 
             // 从 localStorage 加载设置
@@ -736,10 +893,37 @@
                     }
                 });
 
-                // 滚动时更新目录高亮
+                // 滚动时更新目录高亮和进度
+                let saveTimeout = null;
                 document.getElementById('reader-container').addEventListener('scroll', () => {
                     this.updateActiveTocItem();
+                    this.updateProgress();
+                    
+                    // 防抖保存阅读进度
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(() => {
+                        this.saveReadingProgress();
+                    }, 500);
                 });
+            }
+
+            // 更新阅读进度
+            updateProgress() {
+                const container = document.getElementById('reader-container');
+                const readerContent = document.getElementById('reader-content');
+                
+                if (readerContent.style.display === 'none') return;
+                
+                const scrollTop = container.scrollTop;
+                const scrollHeight = container.scrollHeight - container.clientHeight;
+                
+                let progress = 0;
+                if (scrollHeight > 0) {
+                    progress = Math.min(100, Math.round((scrollTop / scrollHeight) * 100));
+                }
+                
+                document.getElementById('progress-bar').style.width = progress + '%';
+                document.getElementById('progress-text').textContent = progress + '%';
             }
 
             showLoading(show) {
@@ -750,6 +934,29 @@
                 this.showLoading(true);
                 try {
                     const arrayBuffer = await file.arrayBuffer();
+                    this.currentFileName = file.name;
+                    
+                    // 保存到 IndexedDB
+                    try {
+                        await this.bookStorage.saveBook(arrayBuffer, file.name);
+                    } catch (e) {
+                        console.warn('无法保存书籍到存储:', e);
+                    }
+                    
+                    // 重置待恢复的滚动位置（新文件不需要恢复）
+                    this.pendingScrollPosition = null;
+                    
+                    await this.loadEPUBFromArrayBuffer(arrayBuffer, file.name);
+                } catch (error) {
+                    console.error('加载 EPUB 失败:', error);
+                    alert('加载 EPUB 文件失败，请确保文件格式正确。');
+                    this.showLoading(false);
+                }
+            }
+
+            async loadEPUBFromArrayBuffer(arrayBuffer, fileName) {
+                this.showLoading(true);
+                try {
                     this.zip = await JSZip.loadAsync(arrayBuffer);
                     
                     // 解析 container.xml 获取 OPF 路径
@@ -770,9 +977,26 @@
                     await this.renderBook();
                     this.renderTOC();
                     
-                    document.getElementById('book-title').textContent = this.metadata.title || file.name;
+                    document.getElementById('book-title').textContent = this.metadata.title || fileName;
                     document.getElementById('welcome-screen').style.display = 'none';
                     document.getElementById('reader-content').style.display = 'block';
+                    document.getElementById('progress-indicator').style.display = 'flex';
+                    
+                    // 恢复阅读位置
+                    if (this.pendingScrollPosition !== null) {
+                        const container = document.getElementById('reader-container');
+                        // 使用 requestAnimationFrame 确保 DOM 已渲染
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                container.scrollTop = this.pendingScrollPosition;
+                                this.pendingScrollPosition = null;
+                                this.updateProgress();
+                                this.updateActiveTocItem();
+                            });
+                        });
+                    } else {
+                        this.updateProgress();
+                    }
                 } catch (error) {
                     console.error('加载 EPUB 失败:', error);
                     alert('加载 EPUB 文件失败，请确保文件格式正确。');
