@@ -337,6 +337,211 @@
             font-size: 11px;
         }
 
+        /* 阅读时间指示器 */
+        .time-indicator {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: #e8f5e9;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #2e7d32;
+        }
+
+        .time-indicator.active {
+            display: flex;
+        }
+
+        .time-indicator .time-icon {
+            font-size: 14px;
+        }
+
+        .time-indicator .time-value {
+            font-weight: 600;
+        }
+
+        /* 总字数指示器 */
+        .word-count-indicator {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: #e3f2fd;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #1565c0;
+        }
+
+        .word-count-indicator.active {
+            display: flex;
+        }
+
+        .word-count-indicator .word-count-icon {
+            font-size: 14px;
+        }
+
+        .word-count-indicator .word-count-value {
+            font-weight: 600;
+        }
+
+        .word-count-indicator .word-count-unit {
+            color: #1976d2;
+            font-size: 11px;
+        }
+
+        /* 书架按钮 */
+        .library-btn {
+            background: #607d8b;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .library-btn:hover {
+            background: #546e7a;
+        }
+
+        /* 书架模态框 */
+        .library-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .library-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .library-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .library-header h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+
+        .library-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #95a5a6;
+            padding: 5px;
+        }
+
+        .library-close:hover {
+            color: #2c3e50;
+        }
+
+        .library-books {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .library-book {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            border-bottom: 1px solid #f5f5f5;
+            transition: background 0.2s;
+        }
+
+        .library-book:hover {
+            background: #f8f9fa;
+        }
+
+        .book-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .book-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #2c3e50;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 5px;
+        }
+
+        .book-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 12px;
+            color: #95a5a6;
+        }
+
+        .book-progress {
+            color: #3498db;
+            font-weight: 500;
+        }
+
+        .book-time {
+            color: #27ae60;
+        }
+
+        .book-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 15px;
+        }
+
+        .book-open {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .book-open:hover {
+            background: #2980b9;
+        }
+
+        .book-delete {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .book-delete:hover {
+            background: #c0392b;
+        }
+
         /* 阅读区域 */
         .reader-container {
             flex: 1;
@@ -547,6 +752,41 @@
                 padding: 6px 10px;
                 font-size: 12px;
             }
+
+            .time-indicator {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+
+            .word-count-indicator {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+
+            .library-btn {
+                padding: 8px 10px;
+                font-size: 12px;
+            }
+
+            .library-content {
+                width: 95%;
+                max-height: 90vh;
+            }
+
+            .library-book {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .book-actions {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .book-actions button {
+                flex: 1;
+            }
         }
     </style>
 </head>
@@ -578,12 +818,22 @@
                     </div>
                     <span class="progress-text" id="progress-text">0%</span>
                 </div>
+                <div class="time-indicator" id="time-indicator">
+                    <span class="time-icon">⏱</span>
+                    <span class="time-value" id="time-value">0分钟</span>
+                </div>
                 <div class="speed-indicator" id="speed-indicator">
                     <span class="speed-icon">⚡</span>
                     <span class="speed-value" id="speed-value">--</span>
-                    <span class="speed-unit">字/分钟</span>
+                    <span class="speed-unit">词/分钟</span>
+                </div>
+                <div class="word-count-indicator" id="word-count-indicator">
+                    <span class="word-count-icon">📝</span>
+                    <span class="word-count-value" id="word-count-value">0</span>
+                    <span class="word-count-unit">词</span>
                 </div>
                 <button class="settings-btn" id="settings-btn">⚙ 设置</button>
+                <button class="library-btn" id="library-btn">📚 书架</button>
                 <label class="upload-btn" for="file-input">📂 打开文件</label>
                 <input type="file" id="file-input" accept=".epub">
             </div>
@@ -658,17 +908,18 @@
     </div>
 
     <script>
-        // IndexedDB 工具类
+        // IndexedDB 工具类 - 支持多本书
         class BookStorage {
             constructor() {
                 this.dbName = 'EPUBReaderDB';
-                this.storeName = 'books';
+                this.booksStore = 'books';
+                this.progressStore = 'progress';
                 this.db = null;
             }
 
             async init() {
                 return new Promise((resolve, reject) => {
-                    const request = indexedDB.open(this.dbName, 1);
+                    const request = indexedDB.open(this.dbName, 2);
                     
                     request.onerror = () => reject(request.error);
                     request.onsuccess = () => {
@@ -678,23 +929,124 @@
                     
                     request.onupgradeneeded = (e) => {
                         const db = e.target.result;
-                        if (!db.objectStoreNames.contains(this.storeName)) {
-                            db.createObjectStore(this.storeName, { keyPath: 'id' });
+                        
+                        // 书籍存储
+                        if (!db.objectStoreNames.contains(this.booksStore)) {
+                            const bookStore = db.createObjectStore(this.booksStore, { keyPath: 'id' });
+                            bookStore.createIndex('lastOpenedAt', 'lastOpenedAt', { unique: false });
+                        }
+                        
+                        // 阅读进度存储
+                        if (!db.objectStoreNames.contains(this.progressStore)) {
+                            db.createObjectStore(this.progressStore, { keyPath: 'bookId' });
                         }
                     };
                 });
             }
 
-            async saveBook(arrayBuffer, fileName) {
+            // 生成书籍唯一标识
+            async generateBookId(arrayBuffer, fileName) {
+                const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
+                return `${fileName}-${hashHex}`;
+            }
+
+            // 保存书籍
+            async saveBook(arrayBuffer, fileName, metadata = {}) {
+                const bookId = await this.generateBookId(arrayBuffer, fileName);
+                
                 return new Promise((resolve, reject) => {
-                    const transaction = this.db.transaction([this.storeName], 'readwrite');
-                    const store = transaction.objectStore(this.storeName);
+                    const transaction = this.db.transaction([this.booksStore], 'readwrite');
+                    const store = transaction.objectStore(this.booksStore);
                     
                     const request = store.put({
-                        id: 'lastBook',
+                        id: bookId,
                         data: arrayBuffer,
                         fileName: fileName,
-                        timestamp: Date.now()
+                        title: metadata.title || fileName,
+                        author: metadata.author || '',
+                        lastOpenedAt: Date.now(),
+                        addedAt: Date.now()
+                    });
+                    
+                    request.onsuccess = () => resolve(bookId);
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            // 更新书籍的最后打开时间
+            async updateLastOpened(bookId) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.booksStore], 'readwrite');
+                    const store = transaction.objectStore(this.booksStore);
+                    const getRequest = store.get(bookId);
+                    
+                    getRequest.onsuccess = () => {
+                        const book = getRequest.result;
+                        if (book) {
+                            book.lastOpenedAt = Date.now();
+                            store.put(book);
+                        }
+                        resolve();
+                    };
+                    getRequest.onerror = () => reject(getRequest.error);
+                });
+            }
+
+            // 获取书籍
+            async getBook(bookId) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.booksStore], 'readonly');
+                    const store = transaction.objectStore(this.booksStore);
+                    const request = store.get(bookId);
+                    
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            // 获取所有书籍（按最后打开时间排序）
+            async getAllBooks() {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.booksStore], 'readonly');
+                    const store = transaction.objectStore(this.booksStore);
+                    const request = store.getAll();
+                    
+                    request.onsuccess = () => {
+                        const books = request.result || [];
+                        // 按最后打开时间降序排列
+                        books.sort((a, b) => (b.lastOpenedAt || 0) - (a.lastOpenedAt || 0));
+                        resolve(books);
+                    };
+                    request.onerror = () => reject(request.error);
+                });
+            }
+
+            // 删除书籍
+            async deleteBook(bookId) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.booksStore, this.progressStore], 'readwrite');
+                    transaction.objectStore(this.booksStore).delete(bookId);
+                    transaction.objectStore(this.progressStore).delete(bookId);
+                    
+                    transaction.oncomplete = () => resolve();
+                    transaction.onerror = () => reject(transaction.error);
+                });
+            }
+
+            // 保存阅读进度
+            async saveProgress(bookId, progressData) {
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.progressStore], 'readwrite');
+                    const store = transaction.objectStore(this.progressStore);
+                    
+                    const request = store.put({
+                        bookId: bookId,
+                        scrollPosition: progressData.scrollPosition,
+                        scrollPercentage: progressData.scrollPercentage,
+                        totalReadingTime: progressData.totalReadingTime || 0,
+                        lastReadAt: Date.now()
                     });
                     
                     request.onsuccess = () => resolve();
@@ -702,15 +1054,26 @@
                 });
             }
 
-            async getLastBook() {
+            // 获取阅读进度
+            async getProgress(bookId) {
                 return new Promise((resolve, reject) => {
-                    const transaction = this.db.transaction([this.storeName], 'readonly');
-                    const store = transaction.objectStore(this.storeName);
-                    const request = store.get('lastBook');
+                    const transaction = this.db.transaction([this.progressStore], 'readonly');
+                    const store = transaction.objectStore(this.progressStore);
+                    const request = store.get(bookId);
                     
                     request.onsuccess = () => resolve(request.result);
                     request.onerror = () => reject(request.error);
                 });
+            }
+
+            // 获取最近阅读的书籍ID
+            getLastBookId() {
+                return localStorage.getItem('epubLastBookId');
+            }
+
+            // 设置最近阅读的书籍ID
+            setLastBookId(bookId) {
+                localStorage.setItem('epubLastBookId', bookId);
             }
         }
 
@@ -725,13 +1088,21 @@
                 this.metadata = {};
                 this.chapterElements = [];
                 this.currentFileName = '';
+                this.currentBookId = null;
                 this.bookStorage = new BookStorage();
                 this.pendingScrollPosition = null;
                 
                 // 阅读速度跟踪
-                this.readingHistory = []; // { timestamp, scrollTop, wordsRead }
+                this.readingHistory = [];
                 this.totalCharacters = 0;
                 this.speedUpdateInterval = null;
+                
+                // 阅读时间跟踪
+                this.totalReadingTime = 0;
+                this.sessionStartTime = null;
+                this.isPageVisible = true;
+                this.readingTimeInterval = null;
+                this.timeDisplayInterval = null;
                 
                 // 默认设置
                 this.settings = {
@@ -745,8 +1116,104 @@
                 this.loadSettings();
                 this.initEventListeners();
                 this.initSettingsListeners();
+                this.initVisibilityTracking();
                 this.applySettings();
                 this.initStorage();
+            }
+
+            // 初始化页面可见性跟踪
+            initVisibilityTracking() {
+                // 页面可见性变化
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        this.pauseReadingTime();
+                    } else {
+                        this.resumeReadingTime();
+                    }
+                });
+                
+                // 窗口焦点变化
+                window.addEventListener('blur', () => {
+                    this.pauseReadingTime();
+                });
+                
+                window.addEventListener('focus', () => {
+                    this.resumeReadingTime();
+                });
+                
+                // 页面卸载时保存
+                window.addEventListener('beforeunload', () => {
+                    this.pauseReadingTime();
+                    this.saveReadingProgress();
+                });
+            }
+
+            // 开始计时
+            startReadingTime() {
+                // 清除之前的定时器
+                if (this.readingTimeInterval) {
+                    clearInterval(this.readingTimeInterval);
+                }
+                if (this.timeDisplayInterval) {
+                    clearInterval(this.timeDisplayInterval);
+                }
+                
+                this.sessionStartTime = Date.now();
+                this.isPageVisible = !document.hidden;
+                
+                // 每分钟保存一次阅读时间
+                this.readingTimeInterval = setInterval(() => {
+                    if (this.isPageVisible && this.currentBookId) {
+                        this.saveReadingProgress();
+                    }
+                }, 60000);
+                
+                // 每10秒更新一次阅读时间显示
+                this.timeDisplayInterval = setInterval(() => {
+                    this.updateTimeDisplay();
+                }, 10000);
+            }
+
+            // 暂停计时
+            pauseReadingTime() {
+                if (this.isPageVisible && this.sessionStartTime) {
+                    const elapsed = Date.now() - this.sessionStartTime;
+                    this.totalReadingTime += elapsed;
+                    this.sessionStartTime = null;
+                }
+                this.isPageVisible = false;
+            }
+
+            // 恢复计时
+            resumeReadingTime() {
+                if (!this.isPageVisible && this.currentBookId) {
+                    this.sessionStartTime = Date.now();
+                    this.isPageVisible = true;
+                }
+            }
+
+            // 获取当前累计阅读时间
+            getCurrentReadingTime() {
+                let total = this.totalReadingTime;
+                if (this.isPageVisible && this.sessionStartTime) {
+                    total += Date.now() - this.sessionStartTime;
+                }
+                return total;
+            }
+
+            // 格式化阅读时间
+            formatReadingTime(ms) {
+                const seconds = Math.floor(ms / 1000);
+                const minutes = Math.floor(seconds / 60);
+                const hours = Math.floor(minutes / 60);
+                
+                if (hours > 0) {
+                    return `${hours}小时${minutes % 60}分钟`;
+                } else if (minutes > 0) {
+                    return `${minutes}分钟`;
+                } else {
+                    return `${seconds}秒`;
+                }
             }
 
             // 初始化存储并尝试加载上次的书籍
@@ -762,21 +1229,21 @@
             // 加载上次打开的书籍
             async loadLastBook() {
                 try {
-                    const lastBook = await this.bookStorage.getLastBook();
-                    if (lastBook && lastBook.data) {
-                        // 获取保存的阅读位置
-                        const savedProgress = localStorage.getItem('epubReaderProgress');
-                        if (savedProgress) {
-                            try {
-                                const progress = JSON.parse(savedProgress);
-                                if (progress.fileName === lastBook.fileName) {
-                                    this.pendingScrollPosition = progress.scrollPosition;
-                                }
-                            } catch (e) {}
+                    const lastBookId = this.bookStorage.getLastBookId();
+                    if (lastBookId) {
+                        const book = await this.bookStorage.getBook(lastBookId);
+                        if (book && book.data) {
+                            // 获取保存的阅读进度
+                            const progress = await this.bookStorage.getProgress(lastBookId);
+                            if (progress) {
+                                this.pendingScrollPosition = progress.scrollPosition;
+                                this.totalReadingTime = progress.totalReadingTime || 0;
+                            }
+                            
+                            this.currentFileName = book.fileName;
+                            this.currentBookId = lastBookId;
+                            await this.loadEPUBFromArrayBuffer(book.data, book.fileName, true);
                         }
-                        
-                        this.currentFileName = lastBook.fileName;
-                        await this.loadEPUBFromArrayBuffer(lastBook.data, lastBook.fileName);
                     }
                 } catch (e) {
                     console.warn('无法加载上次的书籍:', e);
@@ -784,20 +1251,149 @@
             }
 
             // 保存阅读进度
-            saveReadingProgress() {
-                if (!this.currentFileName) return;
+            async saveReadingProgress() {
+                if (!this.currentBookId) return;
                 
                 const container = document.getElementById('reader-container');
-                const progress = {
-                    fileName: this.currentFileName,
-                    scrollPosition: container.scrollTop,
-                    timestamp: Date.now()
-                };
+                const scrollHeight = container.scrollHeight - container.clientHeight;
+                const scrollPercentage = scrollHeight > 0 
+                    ? Math.round((container.scrollTop / scrollHeight) * 100) 
+                    : 0;
                 
-                localStorage.setItem('epubReaderProgress', JSON.stringify(progress));
+                try {
+                    await this.bookStorage.saveProgress(this.currentBookId, {
+                        scrollPosition: container.scrollTop,
+                        scrollPercentage: scrollPercentage,
+                        totalReadingTime: this.getCurrentReadingTime()
+                    });
+                } catch (e) {
+                    console.warn('保存进度失败:', e);
+                }
             }
 
-            // 计算已阅读的字符数（基于滚动位置）
+            // 显示书架
+            async showLibrary() {
+                const books = await this.bookStorage.getAllBooks();
+                
+                if (books.length === 0) {
+                    return;
+                }
+                
+                // 获取每本书的进度
+                const booksWithProgress = await Promise.all(books.map(async (book) => {
+                    const progress = await this.bookStorage.getProgress(book.id);
+                    return { ...book, progress };
+                }));
+                
+                this.renderLibrary(booksWithProgress);
+            }
+
+            // 渲染书架
+            renderLibrary(books) {
+                const modal = document.createElement('div');
+                modal.className = 'library-modal';
+                modal.innerHTML = `
+                    <div class="library-content">
+                        <div class="library-header">
+                            <h2>阅读历史</h2>
+                            <button class="library-close" id="library-close">✕</button>
+                        </div>
+                        <div class="library-books" id="library-books">
+                            ${books.map(book => `
+                                <div class="library-book" data-book-id="${book.id}">
+                                    <div class="book-info">
+                                        <div class="book-title">${book.title || book.fileName}</div>
+                                        <div class="book-meta">
+                                            ${book.author ? `<span class="book-author">${book.author}</span>` : ''}
+                                            <span class="book-progress">${book.progress ? book.progress.scrollPercentage + '%' : '0%'}</span>
+                                            ${book.progress && book.progress.totalReadingTime ? 
+                                                `<span class="book-time">已读 ${this.formatReadingTime(book.progress.totalReadingTime)}</span>` : ''}
+                                        </div>
+                                    </div>
+                                    <div class="book-actions">
+                                        <button class="book-open" data-book-id="${book.id}">打开</button>
+                                        <button class="book-delete" data-book-id="${book.id}">删除</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // 关闭按钮
+                document.getElementById('library-close').addEventListener('click', () => {
+                    modal.remove();
+                });
+                
+                // 点击背景关闭
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+                
+                // 打开书籍
+                modal.querySelectorAll('.book-open').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const bookId = btn.dataset.bookId;
+                        modal.remove();
+                        await this.openBookById(bookId);
+                    });
+                });
+                
+                // 删除书籍
+                modal.querySelectorAll('.book-delete').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const bookId = btn.dataset.bookId;
+                        if (confirm('确定要删除这本书吗？')) {
+                            await this.bookStorage.deleteBook(bookId);
+                            btn.closest('.library-book').remove();
+                            
+                            // 如果删除的是当前书籍
+                            if (bookId === this.currentBookId) {
+                                this.currentBookId = null;
+                                document.getElementById('welcome-screen').style.display = 'flex';
+                                document.getElementById('reader-content').style.display = 'none';
+                            }
+                        }
+                    });
+                });
+            }
+
+            // 通过ID打开书籍
+            async openBookById(bookId) {
+                this.showLoading(true);
+                try {
+                    const book = await this.bookStorage.getBook(bookId);
+                    if (book && book.data) {
+                        const progress = await this.bookStorage.getProgress(bookId);
+                        if (progress) {
+                            this.pendingScrollPosition = progress.scrollPosition;
+                            this.totalReadingTime = progress.totalReadingTime || 0;
+                        } else {
+                            this.totalReadingTime = 0;
+                        }
+                        
+                        this.currentFileName = book.fileName;
+                        this.currentBookId = bookId;
+                        this.bookStorage.setLastBookId(bookId);
+                        await this.bookStorage.updateLastOpened(bookId);
+                        
+                        await this.loadEPUBFromArrayBuffer(book.data, book.fileName, true);
+                    }
+                } catch (e) {
+                    console.error('打开书籍失败:', e);
+                    alert('打开书籍失败');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            // 计算已阅读的字符数（基于滚动位置，不包含当前可视区域）
             calculateWordsRead() {
                 const container = document.getElementById('reader-container');
                 const readerContent = document.getElementById('reader-content');
@@ -805,15 +1401,14 @@
                 if (!readerContent || readerContent.style.display === 'none') return 0;
                 
                 const scrollTop = container.scrollTop;
-                const viewportHeight = container.clientHeight;
                 const scrollHeight = container.scrollHeight;
                 
-                if (scrollHeight <= viewportHeight) {
-                    return this.totalCharacters;
+                if (scrollHeight <= 0) {
+                    return 0;
                 }
                 
-                // 估算已阅读的字符数（基于滚动比例）
-                const readRatio = (scrollTop + viewportHeight) / scrollHeight;
+                // 估算已阅读的字符数（只计算滚动过的部分，不包含当前可视区域）
+                const readRatio = scrollTop / scrollHeight;
                 return Math.round(this.totalCharacters * readRatio);
             }
 
@@ -827,20 +1422,20 @@
                     wordsRead: wordsRead
                 });
                 
-                // 只保留过去3分钟的数据
-                const threeMinutesAgo = now - 3 * 60 * 1000;
-                this.readingHistory = this.readingHistory.filter(h => h.timestamp >= threeMinutesAgo);
+                // 只保留过去10分钟的数据
+                const tenMinutesAgo = now - 10 * 60 * 1000;
+                this.readingHistory = this.readingHistory.filter(h => h.timestamp >= tenMinutesAgo);
             }
 
-            // 计算阅读速度（字/分钟）
+            // 计算阅读速度（词/分钟）
             calculateReadingSpeed() {
                 if (this.readingHistory.length < 2) return null;
                 
                 const now = Date.now();
-                const threeMinutesAgo = now - 3 * 60 * 1000;
+                const tenMinutesAgo = now - 10 * 60 * 1000;
                 
-                // 获取3分钟内的历史记录
-                const recentHistory = this.readingHistory.filter(h => h.timestamp >= threeMinutesAgo);
+                // 获取10分钟内的历史记录
+                const recentHistory = this.readingHistory.filter(h => h.timestamp >= tenMinutesAgo);
                 
                 if (recentHistory.length < 2) return null;
                 
@@ -858,8 +1453,8 @@
                 
                 const wpm = Math.round(wordsDiff / timeDiffMinutes);
                 
-                // 合理范围检查（中文阅读速度一般在200-800字/分钟）
-                if (wpm < 10 || wpm > 2000) return null;
+                // 合理范围检查（英文阅读速度一般在100-1000词/分钟）
+                if (wpm < 10 || wpm > 1500) return null;
                 
                 return wpm;
             }
@@ -904,6 +1499,35 @@
                     clearInterval(this.speedUpdateInterval);
                     this.speedUpdateInterval = null;
                 }
+            }
+
+            // 更新阅读时间显示
+            updateTimeDisplay() {
+                const timeValue = document.getElementById('time-value');
+                if (timeValue) {
+                    const time = this.getCurrentReadingTime();
+                    timeValue.textContent = this.formatReadingTime(time);
+                }
+            }
+
+            // 更新总字数显示
+            updateWordCountDisplay() {
+                const wordCountIndicator = document.getElementById('word-count-indicator');
+                const wordCountValue = document.getElementById('word-count-value');
+                
+                if (wordCountIndicator && wordCountValue) {
+                    wordCountIndicator.classList.add('active');
+                    // 格式化数字，添加千位分隔符
+                    wordCountValue.textContent = this.totalCharacters.toLocaleString();
+                }
+            }
+
+            // 计算单词数（按英文单词数量）
+            countWords(text) {
+                if (!text) return 0;
+                // 去除首尾空白，按空白字符分隔，过滤空字符串
+                const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+                return words.length;
             }
 
             // 从 localStorage 加载设置
@@ -1066,6 +1690,11 @@
                         this.updateSpeedDisplay();
                     }, 300);
                 });
+
+                // 书架按钮
+                document.getElementById('library-btn').addEventListener('click', () => {
+                    this.showLibrary();
+                });
             }
 
             // 更新阅读进度
@@ -1097,17 +1726,33 @@
                     const arrayBuffer = await file.arrayBuffer();
                     this.currentFileName = file.name;
                     
+                    // 先解析获取元数据
+                    const tempZip = await JSZip.loadAsync(arrayBuffer);
+                    const containerXml = await tempZip.file('META-INF/container.xml').async('text');
+                    const containerDoc = new DOMParser().parseFromString(containerXml, 'application/xml');
+                    const opfPath = containerDoc.querySelector('rootfile').getAttribute('full-path');
+                    const opfContent = await tempZip.file(opfPath).async('text');
+                    const opfDoc = new DOMParser().parseFromString(opfContent, 'application/xml');
+                    const metadataEl = opfDoc.querySelector('metadata');
+                    const metadata = {
+                        title: metadataEl?.querySelector('title')?.textContent || file.name,
+                        author: metadataEl?.querySelector('creator')?.textContent || ''
+                    };
+                    
                     // 保存到 IndexedDB
                     try {
-                        await this.bookStorage.saveBook(arrayBuffer, file.name);
+                        const bookId = await this.bookStorage.saveBook(arrayBuffer, file.name, metadata);
+                        this.currentBookId = bookId;
+                        this.bookStorage.setLastBookId(bookId);
                     } catch (e) {
                         console.warn('无法保存书籍到存储:', e);
                     }
                     
-                    // 重置待恢复的滚动位置（新文件不需要恢复）
+                    // 重置阅读时间和滚动位置（新文件）
                     this.pendingScrollPosition = null;
+                    this.totalReadingTime = 0;
                     
-                    await this.loadEPUBFromArrayBuffer(arrayBuffer, file.name);
+                    await this.loadEPUBFromArrayBuffer(arrayBuffer, file.name, false);
                 } catch (error) {
                     console.error('加载 EPUB 失败:', error);
                     alert('加载 EPUB 文件失败，请确保文件格式正确。');
@@ -1115,7 +1760,7 @@
                 }
             }
 
-            async loadEPUBFromArrayBuffer(arrayBuffer, fileName) {
+            async loadEPUBFromArrayBuffer(arrayBuffer, fileName, isReload = false) {
                 this.showLoading(true);
                 try {
                     this.zip = await JSZip.loadAsync(arrayBuffer);
@@ -1142,13 +1787,21 @@
                     document.getElementById('welcome-screen').style.display = 'none';
                     document.getElementById('reader-content').style.display = 'block';
                     document.getElementById('progress-indicator').style.display = 'flex';
+                    document.getElementById('time-indicator').classList.add('active');
                     
-                    // 计算总字符数
+                    // 计算总单词数（按英文单词数量）
                     const readerContent = document.getElementById('reader-content');
-                    this.totalCharacters = readerContent.textContent.replace(/\s/g, '').length;
+                    this.totalCharacters = this.countWords(readerContent.textContent);
+                    
+                    // 显示总字数
+                    this.updateWordCountDisplay();
                     
                     // 开始阅读速度跟踪
                     this.startSpeedTracking();
+                    
+                    // 开始阅读时间跟踪
+                    this.startReadingTime();
+                    this.updateTimeDisplay();
                     
                     // 恢复阅读位置
                     if (this.pendingScrollPosition !== null) {
