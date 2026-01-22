@@ -308,6 +308,35 @@
             width: 0%;
         }
 
+        /* 阅读速度指示器 */
+        .speed-indicator {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: #fff3e0;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #e65100;
+        }
+
+        .speed-indicator.active {
+            display: flex;
+        }
+
+        .speed-indicator .speed-icon {
+            font-size: 14px;
+        }
+
+        .speed-indicator .speed-value {
+            font-weight: 600;
+        }
+
+        .speed-indicator .speed-unit {
+            color: #ff9800;
+            font-size: 11px;
+        }
+
         /* 阅读区域 */
         .reader-container {
             flex: 1;
@@ -513,6 +542,11 @@
             .progress-bar-container {
                 width: 50px;
             }
+
+            .speed-indicator {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
@@ -543,6 +577,11 @@
                         <div class="progress-bar" id="progress-bar"></div>
                     </div>
                     <span class="progress-text" id="progress-text">0%</span>
+                </div>
+                <div class="speed-indicator" id="speed-indicator">
+                    <span class="speed-icon">⚡</span>
+                    <span class="speed-value" id="speed-value">--</span>
+                    <span class="speed-unit">字/分钟</span>
                 </div>
                 <button class="settings-btn" id="settings-btn">⚙ 设置</button>
                 <label class="upload-btn" for="file-input">📂 打开文件</label>
@@ -689,6 +728,11 @@
                 this.bookStorage = new BookStorage();
                 this.pendingScrollPosition = null;
                 
+                // 阅读速度跟踪
+                this.readingHistory = []; // { timestamp, scrollTop, wordsRead }
+                this.totalCharacters = 0;
+                this.speedUpdateInterval = null;
+                
                 // 默认设置
                 this.settings = {
                     fontFamily: 'system',
@@ -751,6 +795,115 @@
                 };
                 
                 localStorage.setItem('epubReaderProgress', JSON.stringify(progress));
+            }
+
+            // 计算已阅读的字符数（基于滚动位置）
+            calculateWordsRead() {
+                const container = document.getElementById('reader-container');
+                const readerContent = document.getElementById('reader-content');
+                
+                if (!readerContent || readerContent.style.display === 'none') return 0;
+                
+                const scrollTop = container.scrollTop;
+                const viewportHeight = container.clientHeight;
+                const scrollHeight = container.scrollHeight;
+                
+                if (scrollHeight <= viewportHeight) {
+                    return this.totalCharacters;
+                }
+                
+                // 估算已阅读的字符数（基于滚动比例）
+                const readRatio = (scrollTop + viewportHeight) / scrollHeight;
+                return Math.round(this.totalCharacters * readRatio);
+            }
+
+            // 记录阅读历史点
+            recordReadingPoint() {
+                const now = Date.now();
+                const wordsRead = this.calculateWordsRead();
+                
+                this.readingHistory.push({
+                    timestamp: now,
+                    wordsRead: wordsRead
+                });
+                
+                // 只保留过去3分钟的数据
+                const threeMinutesAgo = now - 3 * 60 * 1000;
+                this.readingHistory = this.readingHistory.filter(h => h.timestamp >= threeMinutesAgo);
+            }
+
+            // 计算阅读速度（字/分钟）
+            calculateReadingSpeed() {
+                if (this.readingHistory.length < 2) return null;
+                
+                const now = Date.now();
+                const threeMinutesAgo = now - 3 * 60 * 1000;
+                
+                // 获取3分钟内的历史记录
+                const recentHistory = this.readingHistory.filter(h => h.timestamp >= threeMinutesAgo);
+                
+                if (recentHistory.length < 2) return null;
+                
+                const oldest = recentHistory[0];
+                const newest = recentHistory[recentHistory.length - 1];
+                
+                const timeDiffMinutes = (newest.timestamp - oldest.timestamp) / 60000;
+                const wordsDiff = newest.wordsRead - oldest.wordsRead;
+                
+                // 至少需要10秒的数据
+                if (timeDiffMinutes < 0.167) return null;
+                
+                // 只计算正向阅读（忽略回翻）
+                if (wordsDiff <= 0) return null;
+                
+                const wpm = Math.round(wordsDiff / timeDiffMinutes);
+                
+                // 合理范围检查（中文阅读速度一般在200-800字/分钟）
+                if (wpm < 10 || wpm > 2000) return null;
+                
+                return wpm;
+            }
+
+            // 更新阅读速度显示
+            updateSpeedDisplay() {
+                const speed = this.calculateReadingSpeed();
+                const speedIndicator = document.getElementById('speed-indicator');
+                const speedValue = document.getElementById('speed-value');
+                
+                if (speed !== null) {
+                    speedIndicator.classList.add('active');
+                    speedValue.textContent = speed;
+                } else {
+                    speedValue.textContent = '--';
+                }
+            }
+
+            // 开始阅读速度跟踪
+            startSpeedTracking() {
+                // 停止之前的跟踪
+                this.stopSpeedTracking();
+                
+                // 重置历史
+                this.readingHistory = [];
+                
+                // 记录初始点
+                this.recordReadingPoint();
+                
+                // 显示速度指示器
+                document.getElementById('speed-indicator').classList.add('active');
+                
+                // 每5秒更新一次速度显示
+                this.speedUpdateInterval = setInterval(() => {
+                    this.updateSpeedDisplay();
+                }, 5000);
+            }
+
+            // 停止阅读速度跟踪
+            stopSpeedTracking() {
+                if (this.speedUpdateInterval) {
+                    clearInterval(this.speedUpdateInterval);
+                    this.speedUpdateInterval = null;
+                }
             }
 
             // 从 localStorage 加载设置
@@ -895,6 +1048,7 @@
 
                 // 滚动时更新目录高亮和进度
                 let saveTimeout = null;
+                let speedTimeout = null;
                 document.getElementById('reader-container').addEventListener('scroll', () => {
                     this.updateActiveTocItem();
                     this.updateProgress();
@@ -904,6 +1058,13 @@
                     saveTimeout = setTimeout(() => {
                         this.saveReadingProgress();
                     }, 500);
+                    
+                    // 防抖记录阅读速度数据点
+                    clearTimeout(speedTimeout);
+                    speedTimeout = setTimeout(() => {
+                        this.recordReadingPoint();
+                        this.updateSpeedDisplay();
+                    }, 300);
                 });
             }
 
@@ -981,6 +1142,13 @@
                     document.getElementById('welcome-screen').style.display = 'none';
                     document.getElementById('reader-content').style.display = 'block';
                     document.getElementById('progress-indicator').style.display = 'flex';
+                    
+                    // 计算总字符数
+                    const readerContent = document.getElementById('reader-content');
+                    this.totalCharacters = readerContent.textContent.replace(/\s/g, '').length;
+                    
+                    // 开始阅读速度跟踪
+                    this.startSpeedTracking();
                     
                     // 恢复阅读位置
                     if (this.pendingScrollPosition !== null) {
