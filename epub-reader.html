@@ -390,6 +390,35 @@
             font-size: 11px;
         }
 
+        /* 已读字数指示器 */
+        .read-count-indicator {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: #f3e5f5;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #7b1fa2;
+        }
+
+        .read-count-indicator.active {
+            display: flex;
+        }
+
+        .read-count-indicator .read-count-icon {
+            font-size: 14px;
+        }
+
+        .read-count-indicator .read-count-value {
+            font-weight: 600;
+        }
+
+        .read-count-indicator .read-count-unit {
+            color: #9c27b0;
+            font-size: 11px;
+        }
+
         /* 书架按钮 */
         .library-btn {
             background: #607d8b;
@@ -763,6 +792,11 @@
                 font-size: 12px;
             }
 
+            .read-count-indicator {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+
             .library-btn {
                 padding: 8px 10px;
                 font-size: 12px;
@@ -827,10 +861,15 @@
                     <span class="speed-value" id="speed-value">--</span>
                     <span class="speed-unit">词/分钟</span>
                 </div>
+                <div class="read-count-indicator" id="read-count-indicator">
+                    <span class="read-count-icon">👁</span>
+                    <span class="read-count-value" id="read-count-value">0</span>
+                    <span class="read-count-unit">已读</span>
+                </div>
                 <div class="word-count-indicator" id="word-count-indicator">
                     <span class="word-count-icon">📝</span>
                     <span class="word-count-value" id="word-count-value">0</span>
-                    <span class="word-count-unit">词</span>
+                    <span class="word-count-unit">总词</span>
                 </div>
                 <button class="settings-btn" id="settings-btn">⚙ 设置</button>
                 <button class="library-btn" id="library-btn">📚 书架</button>
@@ -1092,10 +1131,18 @@
                 this.bookStorage = new BookStorage();
                 this.pendingScrollPosition = null;
                 
-                // 阅读速度跟踪
+                // 阅读速度跟踪（精确模式）
                 this.readingHistory = [];
                 this.totalCharacters = 0;
                 this.speedUpdateInterval = null;
+                
+                // 精确阅读追踪
+                this.readObserver = null;
+                this.readParagraphs = new Map(); // 记录每个段落的阅读状态
+                this.totalReadCharacters = 0; // 已确认阅读的字符数
+                this.lastReadCountTime = Date.now(); // 上次记录阅读字符的时间
+                this.readingSpeedHistory = []; // 阅读速度历史记录
+                this.readCheckInterval = null; // 定期检查已读段落的定时器
                 
                 // 阅读时间跟踪
                 this.totalReadingTime = 0;
@@ -1393,49 +1440,164 @@
                 }
             }
 
-            // 计算已阅读的字符数（基于滚动位置，不包含当前可视区域）
-            calculateWordsRead() {
-                const container = document.getElementById('reader-container');
-                const readerContent = document.getElementById('reader-content');
-                
-                if (!readerContent || readerContent.style.display === 'none') return 0;
-                
-                const scrollTop = container.scrollTop;
-                const scrollHeight = container.scrollHeight;
-                
-                if (scrollHeight <= 0) {
-                    return 0;
+            // 初始化精确阅读追踪
+            initPreciseReadingTracker() {
+                // 清理之前的观察器
+                if (this.readObserver) {
+                    this.readObserver.disconnect();
                 }
+                this.readParagraphs.clear();
+                this.totalReadCharacters = 0;
+                this.lastReadCountTime = Date.now();
+                this.readingSpeedHistory = [];
                 
-                // 估算已阅读的字符数（只计算滚动过的部分，不包含当前可视区域）
-                const readRatio = scrollTop / scrollHeight;
-                return Math.round(this.totalCharacters * readRatio);
-            }
-
-            // 记录阅读历史点
-            recordReadingPoint() {
-                const now = Date.now();
-                const wordsRead = this.calculateWordsRead();
+                const readerContent = document.getElementById('reader-content');
+                if (!readerContent) return;
                 
-                this.readingHistory.push({
-                    timestamp: now,
-                    wordsRead: wordsRead
+                // 获取所有文本段落（p, h1-h6, li, blockquote 等）
+                const textElements = readerContent.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, dt, dd, figcaption');
+                
+                // 为每个段落创建追踪数据
+                textElements.forEach((el, index) => {
+                    const text = el.textContent || '';
+                    const wordCount = this.countWords(text);
+                    if (wordCount > 0) {
+                        el.dataset.paragraphId = `para-${index}`;
+                        this.readParagraphs.set(el.dataset.paragraphId, {
+                            element: el,
+                            wordCount: wordCount,
+                            isRead: false,
+                            visibleSince: null,
+                            totalVisibleTime: 0
+                        });
+                    }
                 });
                 
-                // 只保留过去10分钟的数据
-                const tenMinutesAgo = now - 10 * 60 * 1000;
-                this.readingHistory = this.readingHistory.filter(h => h.timestamp >= tenMinutesAgo);
+                // 创建 Intersection Observer
+                const container = document.getElementById('reader-container');
+                this.readObserver = new IntersectionObserver((entries) => {
+                    if (!this.isPageVisible) return;
+                    
+                    const now = Date.now();
+                    entries.forEach(entry => {
+                        const paraId = entry.target.dataset.paragraphId;
+                        if (!paraId) return;
+                        
+                        const paraData = this.readParagraphs.get(paraId);
+                        if (!paraData || paraData.isRead) return;
+                        
+                        // 对于短段落（<= 10词），只需要任意可见即可；较长段落需要50%可见
+                        const visibilityThreshold = paraData.wordCount <= 10 ? 0 : 0.5;
+                        
+                        if (entry.isIntersecting && entry.intersectionRatio > visibilityThreshold) {
+                            // 段落进入可视区域
+                            if (!paraData.visibleSince) {
+                                paraData.visibleSince = now;
+                            }
+                        } else {
+                            // 段落离开可视区域
+                            if (paraData.visibleSince) {
+                                paraData.totalVisibleTime += now - paraData.visibleSince;
+                                paraData.visibleSince = null;
+                                
+                                // 离开时立即检查是否可以标记为已读
+                                this.checkSingleParagraph(paraId, paraData, now);
+                            }
+                        }
+                    });
+                }, {
+                    root: container,
+                    threshold: [0, 0.1, 0.25, 0.5, 0.75, 1.0],
+                    rootMargin: '0px'
+                });
+                
+                // 开始观察所有段落
+                this.readParagraphs.forEach((data) => {
+                    this.readObserver.observe(data.element);
+                });
+                
+                // 定期检查并标记已读段落（每500ms检查一次）
+                if (this.readCheckInterval) {
+                    clearInterval(this.readCheckInterval);
+                }
+                this.readCheckInterval = setInterval(() => {
+                    this.checkReadParagraphs();
+                }, 500);
             }
-
-            // 计算阅读速度（词/分钟）
-            calculateReadingSpeed() {
-                if (this.readingHistory.length < 2) return null;
+            
+            // 计算段落所需的最小阅读时间
+            calculateRequiredReadTime(wordCount) {
+                // 短段落（1-5词）：200-400ms
+                // 中等段落（6-20词）：400-800ms  
+                // 长段落（20+词）：根据阅读速度计算，但至少800ms
+                
+                if (wordCount <= 5) {
+                    return 200 + wordCount * 40; // 200-400ms
+                } else if (wordCount <= 20) {
+                    return 300 + wordCount * 25; // 450-800ms
+                } else {
+                    // 假设每秒阅读5个词，只需要实际阅读时间的30%即可
+                    const WORDS_PER_SECOND = 5;
+                    return Math.max(800, (wordCount / WORDS_PER_SECOND) * 1000 * 0.3);
+                }
+            }
+            
+            // 检查单个段落是否已读
+            checkSingleParagraph(paraId, data, now) {
+                if (data.isRead) return;
+                
+                let totalTime = data.totalVisibleTime;
+                if (data.visibleSince) {
+                    totalTime += now - data.visibleSince;
+                }
+                
+                const requiredTime = this.calculateRequiredReadTime(data.wordCount);
+                
+                if (totalTime >= requiredTime) {
+                    data.isRead = true;
+                    this.totalReadCharacters += data.wordCount;
+                    // 调试：给已读段落添加视觉标记
+                    // data.element.style.backgroundColor = 'rgba(46, 204, 113, 0.1)';
+                }
+            }
+            
+            // 检查并标记已读段落
+            checkReadParagraphs() {
+                if (!this.isPageVisible) return;
                 
                 const now = Date.now();
-                const tenMinutesAgo = now - 10 * 60 * 1000;
                 
-                // 获取10分钟内的历史记录
-                const recentHistory = this.readingHistory.filter(h => h.timestamp >= tenMinutesAgo);
+                this.readParagraphs.forEach((data, paraId) => {
+                    this.checkSingleParagraph(paraId, data, now);
+                });
+            }
+            
+            // 记录阅读速度数据点
+            recordReadingSpeedPoint() {
+                const now = Date.now();
+                
+                // 确保当前可见的段落时间被计入
+                this.checkReadParagraphs();
+                
+                this.readingSpeedHistory.push({
+                    timestamp: now,
+                    wordsRead: this.totalReadCharacters
+                });
+                
+                // 只保留过去5分钟的数据
+                const fiveMinutesAgo = now - 5 * 60 * 1000;
+                this.readingSpeedHistory = this.readingSpeedHistory.filter(h => h.timestamp >= fiveMinutesAgo);
+            }
+
+            // 计算精确阅读速度（词/分钟）
+            calculateReadingSpeed() {
+                if (this.readingSpeedHistory.length < 2) return null;
+                
+                const now = Date.now();
+                
+                // 使用最近2分钟的数据计算速度
+                const twoMinutesAgo = now - 2 * 60 * 1000;
+                const recentHistory = this.readingSpeedHistory.filter(h => h.timestamp >= twoMinutesAgo);
                 
                 if (recentHistory.length < 2) return null;
                 
@@ -1445,16 +1607,16 @@
                 const timeDiffMinutes = (newest.timestamp - oldest.timestamp) / 60000;
                 const wordsDiff = newest.wordsRead - oldest.wordsRead;
                 
-                // 至少需要10秒的数据
-                if (timeDiffMinutes < 0.167) return null;
+                // 至少需要15秒的数据
+                if (timeDiffMinutes < 0.25) return null;
                 
-                // 只计算正向阅读（忽略回翻）
+                // 只计算正向阅读
                 if (wordsDiff <= 0) return null;
                 
                 const wpm = Math.round(wordsDiff / timeDiffMinutes);
                 
-                // 合理范围检查（英文阅读速度一般在100-1000词/分钟）
-                if (wpm < 10 || wpm > 1500) return null;
+                // 合理范围检查
+                if (wpm < 5 || wpm > 2000) return null;
                 
                 return wpm;
             }
@@ -1471,6 +1633,20 @@
                 } else {
                     speedValue.textContent = '--';
                 }
+                
+                // 同时更新已读字数显示
+                this.updateReadCountDisplay();
+            }
+            
+            // 更新已读字数显示
+            updateReadCountDisplay() {
+                const readCountIndicator = document.getElementById('read-count-indicator');
+                const readCountValue = document.getElementById('read-count-value');
+                
+                if (readCountIndicator && readCountValue) {
+                    readCountIndicator.classList.add('active');
+                    readCountValue.textContent = this.totalReadCharacters.toLocaleString();
+                }
             }
 
             // 开始阅读速度跟踪
@@ -1478,19 +1654,20 @@
                 // 停止之前的跟踪
                 this.stopSpeedTracking();
                 
-                // 重置历史
-                this.readingHistory = [];
+                // 初始化精确阅读追踪
+                this.initPreciseReadingTracker();
                 
                 // 记录初始点
-                this.recordReadingPoint();
+                this.recordReadingSpeedPoint();
                 
                 // 显示速度指示器
                 document.getElementById('speed-indicator').classList.add('active');
                 
-                // 每5秒更新一次速度显示
+                // 每3秒记录一次速度数据并更新显示
                 this.speedUpdateInterval = setInterval(() => {
+                    this.recordReadingSpeedPoint();
                     this.updateSpeedDisplay();
-                }, 5000);
+                }, 3000);
             }
 
             // 停止阅读速度跟踪
@@ -1498,6 +1675,14 @@
                 if (this.speedUpdateInterval) {
                     clearInterval(this.speedUpdateInterval);
                     this.speedUpdateInterval = null;
+                }
+                if (this.readCheckInterval) {
+                    clearInterval(this.readCheckInterval);
+                    this.readCheckInterval = null;
+                }
+                if (this.readObserver) {
+                    this.readObserver.disconnect();
+                    this.readObserver = null;
                 }
             }
 
@@ -1672,7 +1857,6 @@
 
                 // 滚动时更新目录高亮和进度
                 let saveTimeout = null;
-                let speedTimeout = null;
                 document.getElementById('reader-container').addEventListener('scroll', () => {
                     this.updateActiveTocItem();
                     this.updateProgress();
@@ -1682,13 +1866,6 @@
                     saveTimeout = setTimeout(() => {
                         this.saveReadingProgress();
                     }, 500);
-                    
-                    // 防抖记录阅读速度数据点
-                    clearTimeout(speedTimeout);
-                    speedTimeout = setTimeout(() => {
-                        this.recordReadingPoint();
-                        this.updateSpeedDisplay();
-                    }, 300);
                 });
 
                 // 书架按钮
