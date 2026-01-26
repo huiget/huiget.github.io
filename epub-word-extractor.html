@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EPUB 单词提取器</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Compromise NLP: 自包含的英语 NLP 库，无需加载外部词典 -->
+    <script src="https://unpkg.com/compromise@14.14.5/builds/compromise.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .drop-zone {
+            border: 3px dashed #bdc3c7;
+            border-radius: 12px;
+            padding: 60px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .drop-zone:hover, .drop-zone.drag-over {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .drop-zone svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            color: #95a5a6;
+        }
+
+        .drop-zone h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+
+        .drop-zone p {
+            color: #7f8c8d;
+            font-size: 16px;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .options-section {
+            background: white;
+            border-radius: 16px;
+            padding: 25px 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .options-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .options-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .option-item label {
+            color: #34495e;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .option-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .option-item input[type="number"] {
+            width: 80px;
+            padding: 6px 10px;
+            border: 2px solid #ecf0f1;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .option-item input[type="number"].coca-range-input {
+            width: 100px;
+        }
+
+        /* 双端滑块样式 */
+        .range-slider-container {
+            width: 100%;
+            margin-top: 15px;
+            padding: 0 10px;
+        }
+
+        .range-slider-wrapper {
+            position: relative;
+            height: 40px;
+            display: flex;
+            align-items: center;
+        }
+
+        .range-slider-track {
+            position: absolute;
+            width: 100%;
+            height: 6px;
+            background: #ecf0f1;
+            border-radius: 3px;
+        }
+
+        .range-slider-range {
+            position: absolute;
+            height: 6px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 3px;
+        }
+
+        .range-slider-wrapper input[type="range"] {
+            position: absolute;
+            width: 100%;
+            height: 6px;
+            background: transparent;
+            pointer-events: none;
+            -webkit-appearance: none;
+            appearance: none;
+            margin: 0;
+        }
+
+        .range-slider-wrapper input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 3px solid #667eea;
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .range-slider-wrapper input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+        }
+
+        .range-slider-wrapper input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 3px solid #667eea;
+            border-radius: 50%;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .range-slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .stats-section {
+            background: white;
+            border-radius: 16px;
+            padding: 25px 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .stats-section.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #667eea;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+
+        .result-section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .result-section.active {
+            display: block;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .result-header h3 {
+            color: #2c3e50;
+            font-size: 1.2em;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd6;
+        }
+
+        .btn-secondary {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #219a52;
+        }
+
+        .word-list {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ecf0f1;
+            border-radius: 8px;
+            padding: 20px;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 15px;
+            line-height: 1.8;
+            color: #2c3e50;
+            background: #fafafa;
+        }
+
+        .word-item {
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .word-item:last-child {
+            border-bottom: none;
+        }
+
+        .word-lemma {
+            font-weight: 600;
+            color: #2c3e50;
+            min-width: 120px;
+        }
+
+        .word-arrow {
+            color: #bdc3c7;
+            font-size: 12px;
+        }
+
+        .word-originals {
+            color: #7f8c8d;
+            font-size: 13px;
+            flex: 1;
+        }
+
+        .word-original-tag {
+            display: inline-block;
+            background: #ecf0f1;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin: 2px 4px 2px 0;
+            font-size: 12px;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            margin-top: 20px;
+            color: #667eea;
+            font-size: 16px;
+        }
+
+        .loading .progress-text {
+            margin-top: 10px;
+            color: #95a5a6;
+            font-size: 14px;
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c0c0c0;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0a0a0;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 15px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .upload-section, .options-section, .stats-section, .result-section {
+                padding: 20px;
+            }
+
+            .drop-zone {
+                padding: 40px 20px;
+            }
+
+            .options-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .result-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p id="loading-text">正在处理 EPUB 文件...</p>
+        <span class="progress-text" id="progress-text"></span>
+    </div>
+
+    <div class="container">
+        <h1>📚 EPUB 单词提取器</h1>
+
+        <div class="upload-section">
+            <label for="file-input">
+                <div class="drop-zone" id="drop-zone">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                    </svg>
+                    <h2>上传 EPUB 文件</h2>
+                    <p>拖放文件到此处，或点击选择文件</p>
+                </div>
+            </label>
+            <input type="file" id="file-input" accept=".epub">
+        </div>
+
+        <div class="options-section">
+            <h3>⚙️ 提取选项</h3>
+            <div class="options-row">
+                <div class="option-item">
+                    <input type="checkbox" id="opt-unique" checked>
+                    <label for="opt-unique">去重（只保留唯一单词）</label>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="opt-sort" checked>
+                    <label for="opt-sort">按字母排序</label>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="opt-lowercase" checked>
+                    <label for="opt-lowercase">全部小写</label>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="opt-filter-short">
+                    <label for="opt-filter-short">过滤短词（少于</label>
+                    <input type="number" id="opt-min-length" value="3" min="1" max="10">
+                    <label for="opt-min-length">个字母）</label>
+                </div>
+            </div>
+            <h3 style="margin-top: 20px;">📊 COCA 词频筛选</h3>
+            <div class="options-row" style="margin-top: 10px;">
+                <div class="option-item">
+                    <input type="checkbox" id="opt-coca-enable">
+                    <label for="opt-coca-enable">启用 COCA 词频筛选</label>
+                    <span id="coca-status" style="font-size: 12px; color: #95a5a6; margin-left: 8px;">(未加载)</span>
+                </div>
+                <div class="option-item">
+                    <label for="opt-coca-min">排名范围:</label>
+                    <input type="number" id="opt-coca-min" value="1" min="1" max="60000" class="coca-range-input">
+                    <label>至</label>
+                    <input type="number" id="opt-coca-max" value="60000" min="1" max="60000" class="coca-range-input">
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="opt-coca-show-rank">
+                    <label for="opt-coca-show-rank">显示 COCA 排名</label>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="opt-coca-sort-by-rank">
+                    <label for="opt-coca-sort-by-rank">按 COCA 排序</label>
+                </div>
+                <div class="option-item">
+                    <input type="checkbox" id="opt-sort-by-freq">
+                    <label for="opt-sort-by-freq">按书中词频排序</label>
+                </div>
+            </div>
+            <div class="range-slider-container">
+                <div class="range-slider-wrapper">
+                    <div class="range-slider-track"></div>
+                    <div class="range-slider-range" id="slider-range"></div>
+                    <input type="range" id="slider-min" min="1" max="60000" value="1">
+                    <input type="range" id="slider-max" min="1" max="60000" value="60000">
+                </div>
+                <div class="range-slider-labels">
+                    <span>1</span>
+                    <span>15000</span>
+                    <span>30000</span>
+                    <span>45000</span>
+                    <span>60000</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-section" id="stats-section">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-total">0</span>
+                    <span class="stat-label">原始单词数</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-lemmatized">0</span>
+                    <span class="stat-label">唯一词形数</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="stat-unique">0</span>
+                    <span class="stat-label" id="stat-unique-label">最终词数</span>
+                </div>
+                <div class="stat-item" id="stat-coca-container" style="display: none;">
+                    <span class="stat-value" id="stat-coca-in-range">0</span>
+                    <span class="stat-label">COCA 范围内</span>
+                </div>
+                <div class="stat-item" id="stat-coca-unknown-container" style="display: none;">
+                    <span class="stat-value" id="stat-coca-unknown">0</span>
+                    <span class="stat-label">非 COCA 词汇</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-section" id="result-section">
+            <div class="result-header">
+                <h3>📝 提取的单词列表</h3>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="copy-btn">📋 复制到剪贴板</button>
+                    <button class="btn btn-secondary" id="download-btn">💾 下载为 TXT</button>
+                </div>
+            </div>
+            <div class="word-list" id="word-list"></div>
+        </div>
+    </div>
+
+    <script>
+        class EPUBWordExtractor {
+            constructor() {
+                this.zip = null;
+                this.opfPath = '';
+                this.opfDir = '';
+                this.manifest = {};
+                this.spine = [];
+                this.extractedWords = [];
+                this.currentFileName = '';
+                
+                // COCA 词频表
+                this.cocaMap = null;
+                this.cocaLoaded = false;
+                this.cocaLoading = false;
+                
+                this.initEventListeners();
+                this.initCOCAListeners();
+            }
+
+            async loadCOCA() {
+                if (this.cocaLoaded || this.cocaLoading) return;
+                
+                this.cocaLoading = true;
+                const statusEl = document.getElementById('coca-status');
+                statusEl.textContent = '(加载中...)';
+                statusEl.style.color = '#f39c12';
+                
+                try {
+                    const response = await fetch('https://huiget.github.io/filtered_COCA60000.txt');
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    const text = await response.text();
+                    const lines = text.split(/\r?\n/);
+                    
+                    this.cocaMap = new Map();
+                    for (let i = 0; i < lines.length; i++) {
+                        const word = lines[i].trim();
+                        if (word) {
+                            this.cocaMap.set(word.toLowerCase(), i + 1);
+                        }
+                    }
+                    
+                    this.cocaLoaded = true;
+                    statusEl.textContent = `(已加载 ${this.cocaMap.size.toLocaleString()} 词)`;
+                    statusEl.style.color = '#27ae60';
+                    console.log(`COCA 词频表加载成功: ${this.cocaMap.size} 词`);
+                    
+                    // 如果已有提取的单词，重新显示
+                    if (this.extractedWords.length > 0) {
+                        this.displayWords();
+                    }
+                } catch (error) {
+                    console.error('加载 COCA 词频表失败:', error);
+                    statusEl.textContent = '(加载失败)';
+                    statusEl.style.color = '#e74c3c';
+                    this.cocaLoaded = false;
+                    document.getElementById('opt-coca-enable').checked = false;
+                    alert('加载 COCA 词频表失败，请检查网络连接。\n\n错误: ' + error.message);
+                } finally {
+                    this.cocaLoading = false;
+                }
+            }
+
+            getCOCARank(word) {
+                if (!this.cocaMap) return null;
+                return this.cocaMap.get(word.toLowerCase()) || null;
+            }
+
+            initCOCAListeners() {
+                // 启用 COCA 筛选时加载词频表
+                document.getElementById('opt-coca-enable').addEventListener('change', async (e) => {
+                    if (e.target.checked && !this.cocaLoaded) {
+                        await this.loadCOCA();
+                    }
+                    if (this.extractedWords.length > 0) {
+                        this.displayWords();
+                    }
+                });
+                
+                // COCA 相关选项变化时重新显示
+                ['opt-coca-min', 'opt-coca-max', 'opt-coca-show-rank', 'opt-coca-sort-by-rank', 'opt-sort-by-freq'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', () => {
+                        if (this.extractedWords.length > 0) {
+                            this.displayWords();
+                        }
+                    });
+                });
+                
+                // 初始化双端滑块
+                this.initRangeSlider();
+            }
+            
+            initRangeSlider() {
+                const sliderMin = document.getElementById('slider-min');
+                const sliderMax = document.getElementById('slider-max');
+                const sliderRange = document.getElementById('slider-range');
+                const inputMin = document.getElementById('opt-coca-min');
+                const inputMax = document.getElementById('opt-coca-max');
+                
+                const updateSliderRange = () => {
+                    const min = parseInt(sliderMin.value);
+                    const max = parseInt(sliderMax.value);
+                    const minPercent = ((min - 1) / 59999) * 100;
+                    const maxPercent = ((max - 1) / 59999) * 100;
+                    sliderRange.style.left = minPercent + '%';
+                    sliderRange.style.width = (maxPercent - minPercent) + '%';
+                };
+                
+                const syncFromSliders = () => {
+                    let minVal = parseInt(sliderMin.value);
+                    let maxVal = parseInt(sliderMax.value);
+                    
+                    // 确保 min 不超过 max
+                    if (minVal > maxVal) {
+                        [minVal, maxVal] = [maxVal, minVal];
+                        sliderMin.value = minVal;
+                        sliderMax.value = maxVal;
+                    }
+                    
+                    inputMin.value = minVal;
+                    inputMax.value = maxVal;
+                    updateSliderRange();
+                    
+                    if (this.extractedWords.length > 0) {
+                        this.displayWords();
+                    }
+                };
+                
+                const syncFromInputs = () => {
+                    let minVal = parseInt(inputMin.value) || 1;
+                    let maxVal = parseInt(inputMax.value) || 60000;
+                    
+                    // 限制范围
+                    minVal = Math.max(1, Math.min(60000, minVal));
+                    maxVal = Math.max(1, Math.min(60000, maxVal));
+                    
+                    // 确保 min 不超过 max
+                    if (minVal > maxVal) {
+                        [minVal, maxVal] = [maxVal, minVal];
+                    }
+                    
+                    inputMin.value = minVal;
+                    inputMax.value = maxVal;
+                    sliderMin.value = minVal;
+                    sliderMax.value = maxVal;
+                    updateSliderRange();
+                };
+                
+                // 滑块事件
+                sliderMin.addEventListener('input', syncFromSliders);
+                sliderMax.addEventListener('input', syncFromSliders);
+                
+                // 输入框事件
+                inputMin.addEventListener('input', syncFromInputs);
+                inputMax.addEventListener('input', syncFromInputs);
+                
+                // 初始化滑块位置
+                updateSliderRange();
+            }
+
+            initEventListeners() {
+                // 文件上传
+                document.getElementById('file-input').addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        this.processEPUB(e.target.files[0]);
+                    }
+                });
+
+                // 拖放支持
+                const dropZone = document.getElementById('drop-zone');
+
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
+
+                dropZone.addEventListener('dragenter', () => dropZone.classList.add('drag-over'));
+                dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+                dropZone.addEventListener('drop', (e) => {
+                    dropZone.classList.remove('drag-over');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0 && files[0].name.endsWith('.epub')) {
+                        this.processEPUB(files[0]);
+                    }
+                });
+
+                // 复制按钮
+                document.getElementById('copy-btn').addEventListener('click', () => {
+                    this.copyToClipboard();
+                });
+
+                // 下载按钮
+                document.getElementById('download-btn').addEventListener('click', () => {
+                    this.downloadAsTxt();
+                });
+
+                // 选项变化时重新处理
+                ['opt-unique', 'opt-sort', 'opt-lowercase', 'opt-filter-short', 'opt-min-length'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', () => {
+                        if (this.extractedWords.length > 0) {
+                            this.displayWords();
+                        }
+                    });
+                });
+            }
+
+            showLoading(show, text = '正在处理 EPUB 文件...', progress = '') {
+                const loading = document.getElementById('loading');
+                const loadingText = document.getElementById('loading-text');
+                const progressText = document.getElementById('progress-text');
+                
+                loading.classList.toggle('active', show);
+                loadingText.textContent = text;
+                progressText.textContent = progress;
+            }
+
+            async processEPUB(file) {
+                this.showLoading(true, '正在解析 EPUB 文件...');
+                this.currentFileName = file.name.replace('.epub', '');
+                
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    this.zip = await JSZip.loadAsync(arrayBuffer);
+                    
+                    this.showLoading(true, '正在读取目录结构...');
+                    
+                    // 解析 container.xml 获取 OPF 路径
+                    const containerXml = await this.zip.file('META-INF/container.xml').async('text');
+                    const containerDoc = new DOMParser().parseFromString(containerXml, 'application/xml');
+                    this.opfPath = containerDoc.querySelector('rootfile').getAttribute('full-path');
+                    this.opfDir = this.opfPath.substring(0, this.opfPath.lastIndexOf('/') + 1);
+
+                    // 解析 OPF 文件
+                    const opfContent = await this.zip.file(this.opfPath).async('text');
+                    const opfDoc = new DOMParser().parseFromString(opfContent, 'application/xml');
+                    
+                    this.parseManifest(opfDoc);
+                    this.parseSpine(opfDoc);
+                    
+                    this.showLoading(true, '正在提取文本内容...');
+                    
+                    // 提取所有文本
+                    const allText = await this.extractAllText();
+                    
+                    this.showLoading(true, '正在提取单词...');
+                    
+                    // 提取单词
+                    const rawWords = this.extractWords(allText);
+                    
+                    document.getElementById('stat-total').textContent = rawWords.length.toLocaleString();
+                    
+                    this.showLoading(true, '正在进行词形还原...');
+                    
+                    // 词形还原（异步，支持进度显示）
+                    this.extractedWords = await this.lemmatizeWords(rawWords);
+                    
+                    // 统计去重后的词形数量
+                    const uniqueLemmas = new Set(this.extractedWords.map(w => w.lemma.toLowerCase()));
+                    document.getElementById('stat-lemmatized').textContent = uniqueLemmas.size.toLocaleString();
+                    
+                    // 显示结果
+                    this.displayWords();
+                    
+                    document.getElementById('stats-section').classList.add('active');
+                    document.getElementById('result-section').classList.add('active');
+                    
+                } catch (error) {
+                    console.error('处理 EPUB 失败:', error);
+                    alert('处理 EPUB 文件失败，请确保文件格式正确。\n\n错误信息: ' + error.message);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            parseManifest(opfDoc) {
+                this.manifest = {};
+                opfDoc.querySelectorAll('manifest item').forEach(item => {
+                    this.manifest[item.getAttribute('id')] = {
+                        href: item.getAttribute('href'),
+                        mediaType: item.getAttribute('media-type')
+                    };
+                });
+            }
+
+            parseSpine(opfDoc) {
+                this.spine = [];
+                opfDoc.querySelectorAll('spine itemref').forEach(itemref => {
+                    const idref = itemref.getAttribute('idref');
+                    if (this.manifest[idref]) {
+                        this.spine.push(this.manifest[idref].href);
+                    }
+                });
+            }
+
+            async extractAllText() {
+                let allText = '';
+                
+                for (let i = 0; i < this.spine.length; i++) {
+                    const href = this.spine[i];
+                    const chapterPath = this.opfDir + href;
+                    
+                    this.showLoading(true, '正在提取文本内容...', `${i + 1} / ${this.spine.length}`);
+                    
+                    try {
+                        const content = await this.zip.file(chapterPath).async('text');
+                        const doc = new DOMParser().parseFromString(content, 'application/xhtml+xml');
+                        
+                        // 移除脚本和样式
+                        doc.querySelectorAll('script, style').forEach(el => el.remove());
+                        
+                        // 获取纯文本
+                        const body = doc.querySelector('body');
+                        if (body) {
+                            allText += ' ' + body.textContent;
+                        }
+                    } catch (e) {
+                        console.warn(`无法读取章节: ${href}`, e);
+                    }
+                }
+                
+                return allText;
+            }
+
+            extractWords(text) {
+                // 提取英文单词（包括带连字符的复合词）
+                // 匹配：纯字母单词、带撇号的缩写形式
+                const wordPattern = /[a-zA-Z]+(?:[''][a-zA-Z]+)?/g;
+                const matches = text.match(wordPattern) || [];
+                
+                // 过滤掉单字母和纯缩写形式
+                return matches.filter(word => {
+                    // 移除撇号部分，只保留主体
+                    const mainWord = word.replace(/[''].+$/, '');
+                    return mainWord.length >= 1;
+                });
+            }
+
+            async lemmatizeWords(words) {
+                const lemmatized = [];
+                
+                // 检查 compromise 库是否加载成功
+                const hasNlp = typeof nlp !== 'undefined';
+                
+                if (hasNlp) {
+                    console.log('Compromise NLP 库加载成功');
+                } else {
+                    console.warn('Compromise NLP 库未加载，将使用原始单词');
+                }
+                
+                // 🚀 性能优化：先去重，只对唯一单词进行词形还原
+                // 步骤1：预处理所有单词，收集唯一的处理后单词
+                const uniqueWordsMap = new Map(); // processedWord -> Set of original words
+                const wordToProcessed = new Map(); // original word -> processedWord
+                
+                for (const word of words) {
+                    // 处理撇号缩写：don't -> do, can't -> can, etc.
+                    const processedWord = word.replace(/[''][a-zA-Z]+$/, '');
+                    if (!processedWord || processedWord.length === 0) continue;
+                    
+                    const lowerProcessed = processedWord.toLowerCase();
+                    wordToProcessed.set(word, lowerProcessed);
+                    
+                    if (!uniqueWordsMap.has(lowerProcessed)) {
+                        uniqueWordsMap.set(lowerProcessed, new Set());
+                    }
+                    uniqueWordsMap.get(lowerProcessed).add(word);
+                }
+                
+                const uniqueWords = Array.from(uniqueWordsMap.keys());
+                console.log(`词形还原优化：从 ${words.length} 个单词中提取出 ${uniqueWords.length} 个唯一单词`);
+                
+                // 步骤2：只对唯一单词进行词形还原
+                const lemmaCache = new Map(); // processedWord -> lemma
+                
+                if (hasNlp) {
+                    // 分批处理，每批显示进度
+                    const batchSize = 500;
+                    const totalBatches = Math.ceil(uniqueWords.length / batchSize);
+                    
+                    for (let i = 0; i < uniqueWords.length; i += batchSize) {
+                        const batch = uniqueWords.slice(i, i + batchSize);
+                        const batchNum = Math.floor(i / batchSize) + 1;
+                        
+                        // 更新进度
+                        if (totalBatches > 1) {
+                            this.showLoading(true, '正在进行词形还原...', `${batchNum} / ${totalBatches} 批`);
+                        }
+                        
+                        for (const processedWord of batch) {
+                            try {
+                                let lemma = processedWord;
+                                const doc = nlp(processedWord);
+                                
+                                // 尝试获取动词原形
+                                if (doc.verbs().found) {
+                                    const infinitive = doc.verbs().toInfinitive().text();
+                                    if (infinitive) {
+                                        lemma = infinitive.toLowerCase();
+                                    }
+                                }
+                                // 尝试获取名词单数形式
+                                else if (doc.nouns().found) {
+                                    const singular = doc.nouns().toSingular().text();
+                                    if (singular) {
+                                        lemma = singular.toLowerCase();
+                                    }
+                                }
+                                
+                                lemmaCache.set(processedWord, lemma);
+                            } catch (e) {
+                                lemmaCache.set(processedWord, processedWord);
+                            }
+                        }
+                        
+                        // 让出主线程，避免页面卡顿
+                        if (i + batchSize < uniqueWords.length) {
+                            await new Promise(resolve => setTimeout(resolve, 0));
+                        }
+                    }
+                } else {
+                    // 没有 NLP 库，直接使用处理后的单词
+                    for (const processedWord of uniqueWords) {
+                        lemmaCache.set(processedWord, processedWord);
+                    }
+                }
+                
+                // 步骤3：将词形还原结果映射回所有原始单词
+                for (const word of words) {
+                    const processedWord = wordToProcessed.get(word);
+                    if (!processedWord) continue;
+                    
+                    const lemma = lemmaCache.get(processedWord) || processedWord;
+                    
+                    if (lemma && lemma.length > 0) {
+                        lemmatized.push({
+                            original: word,
+                            lemma: lemma
+                        });
+                    }
+                }
+                
+                return lemmatized;
+            }
+
+            // 基于规则的词形还原（作为后备方案）
+            applyRulesLemmatization(word) {
+                if (!word || word.length < 2) return word;
+                
+                const lower = word.toLowerCase();
+                
+                // 不规则动词表（常见的）
+                const irregularVerbs = {
+                    'was': 'be', 'were': 'be', 'been': 'be', 'being': 'be', 'am': 'be', 'is': 'be', 'are': 'be',
+                    'had': 'have', 'has': 'have', 'having': 'have',
+                    'did': 'do', 'does': 'do', 'doing': 'do', 'done': 'do',
+                    'went': 'go', 'goes': 'go', 'going': 'go', 'gone': 'go',
+                    'said': 'say', 'says': 'say', 'saying': 'say',
+                    'made': 'make', 'makes': 'make', 'making': 'make',
+                    'took': 'take', 'takes': 'take', 'taking': 'take', 'taken': 'take',
+                    'came': 'come', 'comes': 'come', 'coming': 'come',
+                    'saw': 'see', 'sees': 'see', 'seeing': 'see', 'seen': 'see',
+                    'knew': 'know', 'knows': 'know', 'knowing': 'know', 'known': 'know',
+                    'got': 'get', 'gets': 'get', 'getting': 'get', 'gotten': 'get',
+                    'gave': 'give', 'gives': 'give', 'giving': 'give', 'given': 'give',
+                    'found': 'find', 'finds': 'find', 'finding': 'find',
+                    'thought': 'think', 'thinks': 'think', 'thinking': 'think',
+                    'told': 'tell', 'tells': 'tell', 'telling': 'tell',
+                    'felt': 'feel', 'feels': 'feel', 'feeling': 'feel',
+                    'became': 'become', 'becomes': 'become', 'becoming': 'become',
+                    'left': 'leave', 'leaves': 'leave', 'leaving': 'leave',
+                    'brought': 'bring', 'brings': 'bring', 'bringing': 'bring',
+                    'began': 'begin', 'begins': 'begin', 'beginning': 'begin', 'begun': 'begin',
+                    'kept': 'keep', 'keeps': 'keep', 'keeping': 'keep',
+                    'held': 'hold', 'holds': 'hold', 'holding': 'hold',
+                    'wrote': 'write', 'writes': 'write', 'writing': 'write', 'written': 'write',
+                    'stood': 'stand', 'stands': 'stand', 'standing': 'stand',
+                    'heard': 'hear', 'hears': 'hear', 'hearing': 'hear',
+                    'let': 'let', 'lets': 'let', 'letting': 'let',
+                    'meant': 'mean', 'means': 'mean', 'meaning': 'mean',
+                    'set': 'set', 'sets': 'set', 'setting': 'set',
+                    'met': 'meet', 'meets': 'meet', 'meeting': 'meet',
+                    'ran': 'run', 'runs': 'run', 'running': 'run',
+                    'paid': 'pay', 'pays': 'pay', 'paying': 'pay',
+                    'sat': 'sit', 'sits': 'sit', 'sitting': 'sit',
+                    'spoke': 'speak', 'speaks': 'speak', 'speaking': 'speak', 'spoken': 'speak',
+                    'lay': 'lie', 'lies': 'lie', 'lying': 'lie', 'lain': 'lie',
+                    'led': 'lead', 'leads': 'lead', 'leading': 'lead',
+                    'read': 'read', 'reads': 'read', 'reading': 'read',
+                    'grew': 'grow', 'grows': 'grow', 'growing': 'grow', 'grown': 'grow',
+                    'lost': 'lose', 'loses': 'lose', 'losing': 'lose',
+                    'fell': 'fall', 'falls': 'fall', 'falling': 'fall', 'fallen': 'fall',
+                    'sent': 'send', 'sends': 'send', 'sending': 'send',
+                    'built': 'build', 'builds': 'build', 'building': 'build',
+                    'spent': 'spend', 'spends': 'spend', 'spending': 'spend',
+                    'cut': 'cut', 'cuts': 'cut', 'cutting': 'cut',
+                    'won': 'win', 'wins': 'win', 'winning': 'win',
+                    'caught': 'catch', 'catches': 'catch', 'catching': 'catch',
+                    'broke': 'break', 'breaks': 'break', 'breaking': 'break', 'broken': 'break',
+                    'bought': 'buy', 'buys': 'buy', 'buying': 'buy',
+                    'put': 'put', 'puts': 'put', 'putting': 'put',
+                    'bit': 'bite', 'bites': 'bite', 'biting': 'bite', 'bitten': 'bite',
+                    'chose': 'choose', 'chooses': 'choose', 'choosing': 'choose', 'chosen': 'choose',
+                    'drew': 'draw', 'draws': 'draw', 'drawing': 'draw', 'drawn': 'draw',
+                    'drove': 'drive', 'drives': 'drive', 'driving': 'drive', 'driven': 'drive',
+                    'ate': 'eat', 'eats': 'eat', 'eating': 'eat', 'eaten': 'eat',
+                    'flew': 'fly', 'flies': 'fly', 'flying': 'fly', 'flown': 'fly',
+                    'forgot': 'forget', 'forgets': 'forget', 'forgetting': 'forget', 'forgotten': 'forget',
+                    'hid': 'hide', 'hides': 'hide', 'hiding': 'hide', 'hidden': 'hide',
+                    'hit': 'hit', 'hits': 'hit', 'hitting': 'hit',
+                    'hung': 'hang', 'hangs': 'hang', 'hanging': 'hang',
+                    'hurt': 'hurt', 'hurts': 'hurt', 'hurting': 'hurt',
+                    'quit': 'quit', 'quits': 'quit', 'quitting': 'quit',
+                    'rang': 'ring', 'rings': 'ring', 'ringing': 'ring', 'rung': 'ring',
+                    'rose': 'rise', 'rises': 'rise', 'rising': 'rise', 'risen': 'rise',
+                    'sang': 'sing', 'sings': 'sing', 'singing': 'sing', 'sung': 'sing',
+                    'sank': 'sink', 'sinks': 'sink', 'sinking': 'sink', 'sunk': 'sink',
+                    'slept': 'sleep', 'sleeps': 'sleep', 'sleeping': 'sleep',
+                    'sold': 'sell', 'sells': 'sell', 'selling': 'sell',
+                    'shook': 'shake', 'shakes': 'shake', 'shaking': 'shake', 'shaken': 'shake',
+                    'shot': 'shoot', 'shoots': 'shoot', 'shooting': 'shoot',
+                    'shut': 'shut', 'shuts': 'shut', 'shutting': 'shut',
+                    'stole': 'steal', 'steals': 'steal', 'stealing': 'steal', 'stolen': 'steal',
+                    'stuck': 'stick', 'sticks': 'stick', 'sticking': 'stick',
+                    'struck': 'strike', 'strikes': 'strike', 'striking': 'strike',
+                    'swam': 'swim', 'swims': 'swim', 'swimming': 'swim', 'swum': 'swim',
+                    'threw': 'throw', 'throws': 'throw', 'throwing': 'throw', 'thrown': 'throw',
+                    'understood': 'understand', 'understands': 'understand', 'understanding': 'understand',
+                    'woke': 'wake', 'wakes': 'wake', 'waking': 'wake', 'woken': 'wake',
+                    'wore': 'wear', 'wears': 'wear', 'wearing': 'wear', 'worn': 'wear'
+                };
+
+                // 不规则名词表
+                const irregularNouns = {
+                    'men': 'man', 'women': 'woman', 'children': 'child', 'feet': 'foot',
+                    'teeth': 'tooth', 'mice': 'mouse', 'geese': 'goose', 'people': 'person',
+                    'leaves': 'leaf', 'lives': 'life', 'wives': 'wife', 'knives': 'knife',
+                    'halves': 'half', 'selves': 'self', 'wolves': 'wolf', 'shelves': 'shelf',
+                    'calves': 'calf', 'loaves': 'loaf', 'thieves': 'thief', 'ourselves': 'ourself',
+                    'yourselves': 'yourself', 'themselves': 'themself'
+                };
+
+                // 检查不规则形式
+                if (irregularVerbs[lower]) {
+                    return irregularVerbs[lower];
+                }
+                if (irregularNouns[lower]) {
+                    return irregularNouns[lower];
+                }
+
+                // 规则处理
+                let result = lower;
+
+                // 动词 -ing 形式
+                if (result.endsWith('ing') && result.length > 4) {
+                    const stem = result.slice(0, -3);
+                    // running -> run, stopping -> stop (双写辅音)
+                    if (stem.length >= 2 && stem[stem.length - 1] === stem[stem.length - 2] && 
+                        !'aeiou'.includes(stem[stem.length - 1])) {
+                        result = stem.slice(0, -1);
+                    }
+                    // lying -> lie, dying -> die (特殊的 y->i 变化)
+                    else if (stem.endsWith('y') && stem.length >= 2) {
+                        const beforeY = stem[stem.length - 2];
+                        if (!'aeiou'.includes(beforeY) && ['ly', 'dy', 'ty'].includes(stem.slice(-2))) {
+                            result = stem.slice(0, -1) + 'ie';
+                        } else {
+                            result = stem;
+                        }
+                    }
+                    // making -> make, writing -> write, reserving -> reserve
+                    else if (this.shouldRestoreE(stem)) {
+                        result = stem + 'e';
+                    }
+                    // walking -> walk
+                    else if (stem.length >= 2) {
+                        result = stem;
+                    }
+                }
+                // 动词 -ed 形式
+                else if (result.endsWith('ed') && result.length > 3) {
+                    // cried -> cry, studied -> study
+                    if (result.endsWith('ied')) {
+                        result = result.slice(0, -3) + 'y';
+                    }
+                    // stopped -> stop, planned -> plan (双写辅音字母)
+                    else {
+                        const stem = result.slice(0, -2);
+                        if (stem.length >= 2 && stem[stem.length - 1] === stem[stem.length - 2] &&
+                            !'aeiou'.includes(stem[stem.length - 1])) {
+                            result = stem.slice(0, -1);
+                        }
+                        // 检查是否是 "原词以e结尾 + d" 的形式
+                        // 常见的 -Ced 模式，其中 C 是辅音，原词以 -Ce 结尾
+                        else if (this.shouldRestoreE(stem)) {
+                            result = stem + 'e'; // reserved -> reserve, united -> unite
+                        }
+                        else {
+                            result = stem; // walked -> walk, played -> play
+                        }
+                    }
+                }
+                // 动词 -es/-s 第三人称单数
+                else if (result.endsWith('ies') && result.length > 4) {
+                    result = result.slice(0, -3) + 'y';
+                }
+                else if (result.endsWith('es') && result.length > 3) {
+                    // matches -> match, pushes -> push
+                    const stem = result.slice(0, -2);
+                    if (stem.endsWith('ch') || stem.endsWith('sh') || stem.endsWith('x') || 
+                        stem.endsWith('z') || stem.endsWith('ss')) {
+                        result = stem;
+                    }
+                    // closes -> close
+                    else if (this.isValidWord(stem + 'e')) {
+                        result = stem + 'e';
+                    }
+                    else {
+                        result = stem;
+                    }
+                }
+                else if (result.endsWith('s') && result.length > 2 && !result.endsWith('ss')) {
+                    result = result.slice(0, -1);
+                }
+                // 形容词比较级 -er
+                else if (result.endsWith('er') && result.length > 3) {
+                    const stem = result.slice(0, -2);
+                    // bigger -> big
+                    if (stem.length >= 2 && stem[stem.length - 1] === stem[stem.length - 2] &&
+                        !'aeiou'.includes(stem[stem.length - 1])) {
+                        result = stem.slice(0, -1);
+                    }
+                    // nicer -> nice
+                    else if (this.isValidWord(stem + 'e')) {
+                        result = stem + 'e';
+                    }
+                    // happier -> happy
+                    else if (result.endsWith('ier')) {
+                        result = result.slice(0, -3) + 'y';
+                    }
+                }
+                // 形容词最高级 -est
+                else if (result.endsWith('est') && result.length > 4) {
+                    const stem = result.slice(0, -3);
+                    // biggest -> big
+                    if (stem.length >= 2 && stem[stem.length - 1] === stem[stem.length - 2] &&
+                        !'aeiou'.includes(stem[stem.length - 1])) {
+                        result = stem.slice(0, -1);
+                    }
+                    // nicest -> nice
+                    else if (this.isValidWord(stem + 'e')) {
+                        result = stem + 'e';
+                    }
+                    // happiest -> happy
+                    else if (result.endsWith('iest')) {
+                        result = result.slice(0, -4) + 'y';
+                    }
+                    else {
+                        result = stem;
+                    }
+                }
+                // 副词 -ly
+                else if (result.endsWith('ly') && result.length > 3) {
+                    const stem = result.slice(0, -2);
+                    // happily -> happy
+                    if (result.endsWith('ily')) {
+                        result = result.slice(0, -3) + 'y';
+                    }
+                    // gently -> gentle
+                    else if (this.isValidWord(stem + 'e')) {
+                        result = stem + 'e';
+                    }
+                    // simply -> simple  
+                    else if (stem.endsWith('b') || stem.endsWith('p')) {
+                        result = stem + 'le';
+                    }
+                }
+
+                return result;
+            }
+
+            // 简单判断是否可能是有效单词（启发式）
+            isValidWord(word) {
+                // 简单的启发式：检查元音分布
+                const vowels = word.match(/[aeiou]/gi);
+                return vowels && vowels.length >= 1 && word.length >= 2;
+            }
+
+            // 判断移除 -ed 后是否应该恢复末尾的 e
+            // 例如: reserved -> reserve, united -> unite, used -> use
+            shouldRestoreE(stem) {
+                if (stem.length < 2) return false;
+                
+                const lastChar = stem[stem.length - 1];
+                const secondLastChar = stem[stem.length - 2];
+                
+                // 如果词干以元音结尾，不需要恢复 e（如 played -> play）
+                if ('aeiou'.includes(lastChar)) return false;
+                
+                // 如果倒数第二个字符是 e，说明原词已经有 e 了，不需要再加
+                // 如: registered -> register（不是 registere）
+                //     entered -> enter（不是 entere）
+                //     offered -> offer（不是 offere）
+                if (secondLastChar === 'e') return false;
+                
+                // 常见的以 -Ce 结尾的动词模式（C 是辅音）
+                // -ve (reserve, serve, save, live, move, love, have, give)
+                // -te (unite, create, relate, complete, delete, compete)
+                // -se (use, close, choose, raise, cause, release)
+                // -ce (produce, reduce, force, announce, practice)
+                // -ze (realize, organize, recognize, freeze)
+                // -le (smile, file, rule, scale)
+                // -re (store, prepare, compare, share, care)
+                // -ne (define, combine, determine, phone)
+                // -de (provide, include, decide, guide)
+                // -ge (change, manage, charge, engage)
+                // -ke (like, make, take, shake)
+                // -me (name, time, come, assume)
+                // -pe (hope, type, escape, shape)
+                
+                const endsWithEPattern = ['v', 't', 's', 'c', 'z', 'l', 'r', 'n', 'd', 'g', 'k', 'm', 'p'].includes(lastChar);
+                
+                if (endsWithEPattern) {
+                    // 进一步检查：如果倒数第二个是元音（非e），更可能需要恢复 e
+                    // reserv(e)d, unit(e)d, us(e)d, clos(e)d
+                    if ('aiou'.includes(secondLastChar)) {
+                        return true;
+                    }
+                    // 一些特殊模式：-rve, -rce, -rse, -rge, -nge, -lve 等
+                    if (stem.length >= 3) {
+                        const thirdLastChar = stem[stem.length - 3];
+                        const lastTwo = stem.slice(-2);
+                        // serve, force, curse, charge, change, solve 等
+                        if (['rv', 'rc', 'rs', 'rg', 'ng', 'lv', 'nc', 'ns', 'dg'].includes(lastTwo)) {
+                            return true;
+                        }
+                        // 如果是 辅音+辅音 结尾（不含e），可能需要 e（如 reserv -> reserve）
+                        if (!'aeiou'.includes(thirdLastChar) && !'aeiou'.includes(secondLastChar)) {
+                            return true;
+                        }
+                    }
+                }
+                
+                return false;
+            }
+
+            displayWords() {
+                let wordPairs = [...this.extractedWords];
+                
+                // 应用选项
+                const lowercase = document.getElementById('opt-lowercase').checked;
+                const unique = document.getElementById('opt-unique').checked;
+                const sort = document.getElementById('opt-sort').checked;
+                const filterShort = document.getElementById('opt-filter-short').checked;
+                const minLength = parseInt(document.getElementById('opt-min-length').value) || 3;
+                
+                // COCA 选项
+                const cocaEnable = document.getElementById('opt-coca-enable').checked && this.cocaLoaded;
+                const cocaMin = parseInt(document.getElementById('opt-coca-min').value) || 1;
+                const cocaMax = parseInt(document.getElementById('opt-coca-max').value) || 60000;
+                const cocaShowRank = document.getElementById('opt-coca-show-rank').checked;
+                const cocaSortByRank = document.getElementById('opt-coca-sort-by-rank').checked;
+
+                // 小写处理
+                if (lowercase) {
+                    wordPairs = wordPairs.map(pair => ({
+                        original: pair.original.toLowerCase(),
+                        lemma: pair.lemma.toLowerCase()
+                    }));
+                }
+
+                // 过滤短词（基于词形还原后的词）
+                if (filterShort) {
+                    wordPairs = wordPairs.filter(pair => pair.lemma.length >= minLength);
+                }
+
+                // 去重：按词形还原后的词进行分组，收集所有原始形式和词频
+                let groupedWords;
+                if (unique) {
+                    const lemmaMap = new Map();
+                    for (const pair of wordPairs) {
+                        const key = pair.lemma;
+                        if (!lemmaMap.has(key)) {
+                            lemmaMap.set(key, { originals: new Set(), count: 0 });
+                        }
+                        lemmaMap.get(key).originals.add(pair.original);
+                        lemmaMap.get(key).count++;
+                    }
+                    groupedWords = Array.from(lemmaMap.entries()).map(([lemma, data]) => ({
+                        lemma,
+                        originals: Array.from(data.originals),
+                        count: data.count,
+                        cocaRank: this.getCOCARank(lemma)
+                    }));
+                } else {
+                    // 不去重时，每个词单独显示
+                    groupedWords = wordPairs.map(pair => ({
+                        lemma: pair.lemma,
+                        originals: [pair.original],
+                        count: 1,
+                        cocaRank: this.getCOCARank(pair.lemma)
+                    }));
+                }
+
+                // COCA 词频筛选
+                let cocaInRangeCount = 0;
+                let cocaUnknownCount = 0;
+                
+                if (cocaEnable) {
+                    // 统计 COCA 范围内和未知词
+                    for (const item of groupedWords) {
+                        if (item.cocaRank === null) {
+                            cocaUnknownCount++;
+                        } else if (item.cocaRank >= cocaMin && item.cocaRank <= cocaMax) {
+                            cocaInRangeCount++;
+                        }
+                    }
+                    
+                    // 筛选：只保留 COCA 范围内的词
+                    groupedWords = groupedWords.filter(item => {
+                        if (item.cocaRank === null) return false;
+                        return item.cocaRank >= cocaMin && item.cocaRank <= cocaMax;
+                    });
+                    
+                    // 显示 COCA 统计
+                    document.getElementById('stat-coca-container').style.display = 'block';
+                    document.getElementById('stat-coca-unknown-container').style.display = 'block';
+                    document.getElementById('stat-coca-in-range').textContent = cocaInRangeCount.toLocaleString();
+                    document.getElementById('stat-coca-unknown').textContent = cocaUnknownCount.toLocaleString();
+                } else {
+                    // 隐藏 COCA 统计
+                    document.getElementById('stat-coca-container').style.display = 'none';
+                    document.getElementById('stat-coca-unknown-container').style.display = 'none';
+                }
+
+                // 排序
+                const sortByFreq = document.getElementById('opt-sort-by-freq').checked;
+                
+                if (sortByFreq) {
+                    // 按书中词频排序（出现次数多的在前）
+                    groupedWords.sort((a, b) => b.count - a.count);
+                } else if (cocaEnable && cocaSortByRank) {
+                    // 按 COCA 词频排序（排名越小越常见）
+                    groupedWords.sort((a, b) => {
+                        const rankA = a.cocaRank || Infinity;
+                        const rankB = b.cocaRank || Infinity;
+                        return rankA - rankB;
+                    });
+                } else if (sort) {
+                    groupedWords.sort((a, b) => a.lemma.localeCompare(b.lemma));
+                }
+
+                // 更新统计
+                document.getElementById('stat-unique').textContent = groupedWords.length.toLocaleString();
+
+                // 显示结果
+                const wordList = document.getElementById('word-list');
+                wordList.innerHTML = groupedWords.map(item => {
+                    // 只显示与词形还原后不同的原始形式
+                    const differentOriginals = item.originals.filter(orig => 
+                        orig.toLowerCase() !== item.lemma.toLowerCase()
+                    );
+                    
+                    // 词频显示
+                    const freqHtml = unique
+                        ? `<span class="word-freq" style="font-size: 12px; color: #e67e22; margin-left: 8px; background: #fef5e7; padding: 2px 6px; border-radius: 4px;">×${item.count}</span>`
+                        : '';
+                    
+                    // COCA 排名显示
+                    const rankHtml = (cocaEnable && cocaShowRank && item.cocaRank)
+                        ? `<span class="word-rank" style="font-size: 12px; color: #667eea; margin-left: 8px; background: #f0f4ff; padding: 2px 6px; border-radius: 4px;">#${item.cocaRank}</span>`
+                        : '';
+                    
+                    const originalsHtml = differentOriginals.length > 0
+                        ? `<span class="word-arrow">←</span>
+                           <span class="word-originals">${differentOriginals.map(o => 
+                               `<span class="word-original-tag">${this.escapeHtml(o)}</span>`
+                           ).join('')}</span>`
+                        : '';
+                    
+                    return `<div class="word-item">
+                        <span class="word-lemma">${this.escapeHtml(item.lemma)}</span>
+                        ${freqHtml}
+                        ${rankHtml}
+                        ${originalsHtml}
+                    </div>`;
+                }).join('');
+
+                // 保存处理后的列表用于导出（包含词频和 COCA 信息）
+                this.displayedWords = groupedWords;
+                this.exportWithFreq = unique;
+                this.exportWithCOCA = cocaEnable && cocaShowRank;
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            formatWordsForExport() {
+                return this.displayedWords.map(item => {
+                    const differentOriginals = item.originals.filter(orig => 
+                        orig.toLowerCase() !== item.lemma.toLowerCase()
+                    );
+                    
+                    // 构建导出行
+                    let line = item.lemma;
+                    
+                    // 添加词频（去重模式下）
+                    if (this.exportWithFreq && item.count > 1) {
+                        line += `\t×${item.count}`;
+                    }
+                    
+                    // 添加 COCA 排名
+                    if (this.exportWithCOCA && item.cocaRank) {
+                        line += `\t#${item.cocaRank}`;
+                    }
+                    
+                    // 添加原始形式
+                    if (differentOriginals.length > 0) {
+                        line += `\t← ${differentOriginals.join(', ')}`;
+                    }
+                    
+                    return line;
+                }).join('\n');
+            }
+
+            copyToClipboard() {
+                const text = this.formatWordsForExport();
+                navigator.clipboard.writeText(text).then(() => {
+                    const btn = document.getElementById('copy-btn');
+                    const originalText = btn.textContent;
+                    btn.textContent = '✅ 已复制！';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('复制失败:', err);
+                    alert('复制失败，请手动复制。');
+                });
+            }
+
+            downloadAsTxt() {
+                // 只导出转换后的单词（词形还原后的词），每行一个
+                const text = this.displayedWords.map(item => item.lemma).join('\n');
+                const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${this.currentFileName}-words.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        // 初始化
+        const extractor = new EPUBWordExtractor();
+    </script>
+</body>
+</html>
