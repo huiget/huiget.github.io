@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EPUB 单词提取器</title>
+    <title>单词提取器</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- PDF.js for PDF parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <!-- Compromise NLP: 自包含的英语 NLP 库，无需加载外部词典 -->
     <script src="https://unpkg.com/compromise@14.14.5/builds/compromise.js"></script>
     <style>
@@ -419,6 +421,71 @@
             background: #a0a0a0;
         }
 
+        /* 输入方式选项卡 */
+        .input-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-tab {
+            flex: 1;
+            padding: 12px 20px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            background: #f8f9fa;
+            color: #7f8c8d;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .input-tab:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .input-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .text-input-area {
+            width: 100%;
+        }
+
+        .text-input-area textarea {
+            width: 100%;
+            height: 250px;
+            padding: 20px;
+            border: 2px solid #ecf0f1;
+            border-radius: 12px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            font-size: 15px;
+            line-height: 1.6;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        .text-input-area textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .text-input-area textarea::placeholder {
+            color: #bdc3c7;
+        }
+
         @media (max-width: 600px) {
             body {
                 padding: 20px 15px;
@@ -454,30 +521,52 @@
                 width: 100%;
                 text-align: center;
             }
+
+            .input-tabs {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
     <div class="loading" id="loading">
         <div class="spinner"></div>
-        <p id="loading-text">正在处理 EPUB 文件...</p>
+        <p id="loading-text">正在处理文件...</p>
         <span class="progress-text" id="progress-text"></span>
     </div>
 
     <div class="container">
-        <h1>📚 EPUB 单词提取器</h1>
+        <h1>📚 单词提取器</h1>
 
         <div class="upload-section">
-            <label for="file-input">
-                <div class="drop-zone" id="drop-zone">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
-                    </svg>
-                    <h2>上传 EPUB 文件</h2>
-                    <p>拖放文件到此处，或点击选择文件</p>
+            <!-- 输入方式选项卡 -->
+            <div class="input-tabs">
+                <button class="input-tab active" data-tab="file">📁 上传文件</button>
+                <button class="input-tab" data-tab="text">📝 粘贴文本</button>
+            </div>
+
+            <!-- 文件上传区域 -->
+            <div class="tab-content active" id="tab-file">
+                <label for="file-input">
+                    <div class="drop-zone" id="drop-zone">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                        <h2>上传 EPUB 或 PDF 文件</h2>
+                        <p>拖放文件到此处，或点击选择文件</p>
+                        <p style="font-size: 12px; color: #95a5a6; margin-top: 10px;">支持格式：.epub, .pdf</p>
+                    </div>
+                </label>
+                <input type="file" id="file-input" accept=".epub,.pdf">
+            </div>
+
+            <!-- 文本粘贴区域 -->
+            <div class="tab-content" id="tab-text">
+                <div class="text-input-area">
+                    <textarea id="text-input" placeholder="在此粘贴要提取单词的英文文本..."></textarea>
+                    <button class="btn btn-primary" id="extract-text-btn" style="margin-top: 15px; width: 100%;">🔍 提取单词</button>
                 </div>
-            </label>
-            <input type="file" id="file-input" accept=".epub">
+            </div>
         </div>
 
         <div class="options-section">
@@ -583,7 +672,10 @@
     </div>
 
     <script>
-        class EPUBWordExtractor {
+        // 设置 PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        class WordExtractor {
             constructor() {
                 this.zip = null;
                 this.opfPath = '';
@@ -600,6 +692,39 @@
                 
                 this.initEventListeners();
                 this.initCOCAListeners();
+                this.initTabListeners();
+            }
+
+            initTabListeners() {
+                // 选项卡切换
+                document.querySelectorAll('.input-tab').forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const targetTab = tab.dataset.tab;
+                        
+                        // 更新选项卡状态
+                        document.querySelectorAll('.input-tab').forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        
+                        // 更新内容区域
+                        document.querySelectorAll('.tab-content').forEach(content => {
+                            content.classList.remove('active');
+                        });
+                        document.getElementById(`tab-${targetTab}`).classList.add('active');
+                    });
+                });
+
+                // 文本提取按钮
+                document.getElementById('extract-text-btn').addEventListener('click', () => {
+                    this.processText();
+                });
+
+                // 支持 Ctrl+Enter 快捷键提取文本
+                document.getElementById('text-input').addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                        e.preventDefault();
+                        this.processText();
+                    }
+                });
             }
 
             async loadCOCA() {
@@ -748,7 +873,7 @@
                 // 文件上传
                 document.getElementById('file-input').addEventListener('change', (e) => {
                     if (e.target.files.length > 0) {
-                        this.processEPUB(e.target.files[0]);
+                        this.processFile(e.target.files[0]);
                     }
                 });
 
@@ -767,8 +892,14 @@
                 dropZone.addEventListener('drop', (e) => {
                     dropZone.classList.remove('drag-over');
                     const files = e.dataTransfer.files;
-                    if (files.length > 0 && files[0].name.endsWith('.epub')) {
-                        this.processEPUB(files[0]);
+                    if (files.length > 0) {
+                        const file = files[0];
+                        const ext = file.name.toLowerCase();
+                        if (ext.endsWith('.epub') || ext.endsWith('.pdf')) {
+                            this.processFile(file);
+                        } else {
+                            alert('请上传 EPUB 或 PDF 文件');
+                        }
                     }
                 });
 
@@ -792,7 +923,7 @@
                 });
             }
 
-            showLoading(show, text = '正在处理 EPUB 文件...', progress = '') {
+            showLoading(show, text = '正在处理文件...', progress = '') {
                 const loading = document.getElementById('loading');
                 const loadingText = document.getElementById('loading-text');
                 const progressText = document.getElementById('progress-text');
@@ -800,6 +931,111 @@
                 loading.classList.toggle('active', show);
                 loadingText.textContent = text;
                 progressText.textContent = progress;
+            }
+
+            // 处理文件（自动检测类型）
+            async processFile(file) {
+                const fileName = file.name.toLowerCase();
+                if (fileName.endsWith('.epub')) {
+                    await this.processEPUB(file);
+                } else if (fileName.endsWith('.pdf')) {
+                    await this.processPDF(file);
+                } else {
+                    alert('不支持的文件格式，请上传 EPUB 或 PDF 文件');
+                }
+            }
+
+            // 处理粘贴的文本
+            async processText() {
+                const textInput = document.getElementById('text-input');
+                const text = textInput.value.trim();
+                
+                if (!text) {
+                    alert('请先输入要提取单词的文本');
+                    return;
+                }
+                
+                this.showLoading(true, '正在提取单词...');
+                this.currentFileName = 'pasted-text';
+                
+                try {
+                    // 提取单词
+                    const rawWords = this.extractWords(text);
+                    
+                    document.getElementById('stat-total').textContent = rawWords.length.toLocaleString();
+                    
+                    this.showLoading(true, '正在进行词形还原...');
+                    
+                    // 词形还原
+                    this.extractedWords = await this.lemmatizeWords(rawWords);
+                    
+                    // 统计去重后的词形数量
+                    const uniqueLemmas = new Set(this.extractedWords.map(w => w.lemma.toLowerCase()));
+                    document.getElementById('stat-lemmatized').textContent = uniqueLemmas.size.toLocaleString();
+                    
+                    // 显示结果
+                    this.displayWords();
+                    
+                    document.getElementById('stats-section').classList.add('active');
+                    document.getElementById('result-section').classList.add('active');
+                    
+                } catch (error) {
+                    console.error('处理文本失败:', error);
+                    alert('处理文本失败。\n\n错误信息: ' + error.message);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            // 处理 PDF 文件
+            async processPDF(file) {
+                this.showLoading(true, '正在解析 PDF 文件...');
+                this.currentFileName = file.name.replace('.pdf', '');
+                
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    
+                    let allText = '';
+                    const totalPages = pdf.numPages;
+                    
+                    for (let i = 1; i <= totalPages; i++) {
+                        this.showLoading(true, '正在提取文本内容...', `${i} / ${totalPages} 页`);
+                        
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map(item => item.str).join(' ');
+                        allText += ' ' + pageText;
+                    }
+                    
+                    this.showLoading(true, '正在提取单词...');
+                    
+                    // 提取单词
+                    const rawWords = this.extractWords(allText);
+                    
+                    document.getElementById('stat-total').textContent = rawWords.length.toLocaleString();
+                    
+                    this.showLoading(true, '正在进行词形还原...');
+                    
+                    // 词形还原
+                    this.extractedWords = await this.lemmatizeWords(rawWords);
+                    
+                    // 统计去重后的词形数量
+                    const uniqueLemmas = new Set(this.extractedWords.map(w => w.lemma.toLowerCase()));
+                    document.getElementById('stat-lemmatized').textContent = uniqueLemmas.size.toLocaleString();
+                    
+                    // 显示结果
+                    this.displayWords();
+                    
+                    document.getElementById('stats-section').classList.add('active');
+                    document.getElementById('result-section').classList.add('active');
+                    
+                } catch (error) {
+                    console.error('处理 PDF 失败:', error);
+                    alert('处理 PDF 文件失败，请确保文件格式正确。\n\n错误信息: ' + error.message);
+                } finally {
+                    this.showLoading(false);
+                }
             }
 
             async processEPUB(file) {
@@ -1545,7 +1781,7 @@
         }
 
         // 初始化
-        const extractor = new EPUBWordExtractor();
+        const extractor = new WordExtractor();
     </script>
 </body>
 </html>
