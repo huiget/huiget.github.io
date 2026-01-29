@@ -594,7 +594,7 @@
             <h3 style="margin-top: 20px;">📊 COCA 词频筛选</h3>
             <div class="options-row" style="margin-top: 10px;">
                 <div class="option-item">
-                    <input type="checkbox" id="opt-coca-enable">
+                    <input type="checkbox" id="opt-coca-enable" checked>
                     <label for="opt-coca-enable">启用 COCA 词频筛选</label>
                     <span id="coca-status" style="font-size: 12px; color: #95a5a6; margin-left: 8px;">(未加载)</span>
                 </div>
@@ -656,6 +656,18 @@
                     <span class="stat-value" id="stat-coca-unknown">0</span>
                     <span class="stat-label">非 COCA 词汇</span>
                 </div>
+                <div class="stat-item" id="stat-coca-entity-container" style="display: none;">
+                    <span class="stat-value" id="stat-coca-entity">0</span>
+                    <span class="stat-label">识别为实体</span>
+                </div>
+                <div class="stat-item" id="stat-coca-p95-container" style="display: none;">
+                    <span class="stat-value" id="stat-coca-p95">-</span>
+                    <span class="stat-label">COCA P95 分位</span>
+                </div>
+                <div class="stat-item" id="stat-coca-p98-container" style="display: none;">
+                    <span class="stat-value" id="stat-coca-p98">-</span>
+                    <span class="stat-label">COCA P98 分位</span>
+                </div>
             </div>
         </div>
 
@@ -693,6 +705,9 @@
                 this.initEventListeners();
                 this.initCOCAListeners();
                 this.initTabListeners();
+                
+                // 默认启用 COCA 筛选，自动加载词频表
+                this.loadCOCA();
             }
 
             initTabListeners() {
@@ -1147,8 +1162,8 @@
 
             extractWords(text) {
                 // 提取英文单词（包括带连字符的复合词）
-                // 匹配：纯字母单词、带撇号的缩写形式
-                const wordPattern = /[a-zA-Z]+(?:[''][a-zA-Z]+)?/g;
+                // 匹配：纯字母单词、带撇号的缩写形式、带连字符的复合词
+                const wordPattern = /[a-zA-Z]+(?:[-''][a-zA-Z]+)*/g;
                 const matches = text.match(wordPattern) || [];
                 
                 // 过滤掉单字母和纯缩写形式
@@ -1177,17 +1192,15 @@
                 const wordToProcessed = new Map(); // original word -> processedWord
                 
                 for (const word of words) {
-                    // 处理撇号缩写：don't -> do, can't -> can, etc.
-                    const processedWord = word.replace(/[''][a-zA-Z]+$/, '');
-                    if (!processedWord || processedWord.length === 0) continue;
+                    // 直接使用原始单词，让 compromise 处理缩写形式
+                    // compromise 能正确处理：don't -> do, won't -> will 等
+                    const lowerWord = word.toLowerCase();
+                    wordToProcessed.set(word, lowerWord);
                     
-                    const lowerProcessed = processedWord.toLowerCase();
-                    wordToProcessed.set(word, lowerProcessed);
-                    
-                    if (!uniqueWordsMap.has(lowerProcessed)) {
-                        uniqueWordsMap.set(lowerProcessed, new Set());
+                    if (!uniqueWordsMap.has(lowerWord)) {
+                        uniqueWordsMap.set(lowerWord, new Set());
                     }
-                    uniqueWordsMap.get(lowerProcessed).add(word);
+                    uniqueWordsMap.get(lowerWord).add(word);
                 }
                 
                 const uniqueWords = Array.from(uniqueWordsMap.keys());
@@ -1213,6 +1226,13 @@
                         for (const processedWord of batch) {
                             try {
                                 let lemma = processedWord;
+                                
+                                // 复合词（含连字符）不进行还原
+                                if (processedWord.includes('-')) {
+                                    lemmaCache.set(processedWord, processedWord);
+                                    continue;
+                                }
+                                
                                 const doc = nlp(processedWord);
                                 
                                 // 尝试获取动词原形
@@ -1227,6 +1247,18 @@
                                     const singular = doc.nouns().toSingular().text();
                                     if (singular) {
                                         lemma = singular.toLowerCase();
+                                    }
+                                }
+                                // 尝试获取形容词原形（比较级/最高级还原）
+                                else if (doc.adjectives().found) {
+                                    // compromise 没有直接的 toPositive() 方法，使用规则还原
+                                    lemma = this.applyAdjectiveLemmatization(processedWord);
+                                }
+                                // 如果 NLP 未识别词性，尝试用规则还原形容词
+                                else {
+                                    const ruleBased = this.applyAdjectiveLemmatization(processedWord);
+                                    if (ruleBased !== processedWord) {
+                                        lemma = ruleBased;
                                     }
                                 }
                                 
@@ -1264,6 +1296,77 @@
                 }
                 
                 return lemmatized;
+            }
+
+            // 形容词比较级/最高级还原
+            applyAdjectiveLemmatization(word) {
+                if (!word || word.length < 3) return word;
+                
+                const lower = word.toLowerCase();
+                
+                // 不规则形容词
+                const irregularAdjectives = {
+                    'better': 'good', 'best': 'good',
+                    'worse': 'bad', 'worst': 'bad',
+                    'more': 'much', 'most': 'much',
+                    'less': 'little', 'least': 'little',
+                    'further': 'far', 'furthest': 'far',
+                    'farther': 'far', 'farthest': 'far',
+                    'elder': 'old', 'eldest': 'old',
+                    'older': 'old', 'oldest': 'old'
+                };
+                
+                if (irregularAdjectives[lower]) {
+                    return irregularAdjectives[lower];
+                }
+                
+                let result = lower;
+                
+                // 形容词比较级 -er
+                if (result.endsWith('er') && result.length > 3) {
+                    const stem = result.slice(0, -2);
+                    // bigger -> big (双写辅音)
+                    if (stem.length >= 2 && stem[stem.length - 1] === stem[stem.length - 2] &&
+                        !'aeiou'.includes(stem[stem.length - 1])) {
+                        return stem.slice(0, -1);
+                    }
+                    // happier -> happy
+                    if (result.endsWith('ier')) {
+                        return result.slice(0, -3) + 'y';
+                    }
+                    // nicer -> nice
+                    if (this.isValidWord(stem + 'e')) {
+                        return stem + 'e';
+                    }
+                    // taller -> tall
+                    if (stem.length >= 2) {
+                        return stem;
+                    }
+                }
+                
+                // 形容词最高级 -est
+                if (result.endsWith('est') && result.length > 4) {
+                    const stem = result.slice(0, -3);
+                    // biggest -> big (双写辅音)
+                    if (stem.length >= 2 && stem[stem.length - 1] === stem[stem.length - 2] &&
+                        !'aeiou'.includes(stem[stem.length - 1])) {
+                        return stem.slice(0, -1);
+                    }
+                    // happiest -> happy
+                    if (result.endsWith('iest')) {
+                        return result.slice(0, -4) + 'y';
+                    }
+                    // nicest -> nice
+                    if (this.isValidWord(stem + 'e')) {
+                        return stem + 'e';
+                    }
+                    // tallest -> tall
+                    if (stem.length >= 2) {
+                        return stem;
+                    }
+                }
+                
+                return result;
             }
 
             // 基于规则的词形还原（作为后备方案）
@@ -1628,15 +1731,96 @@
                 // COCA 词频筛选
                 let cocaInRangeCount = 0;
                 let cocaUnknownCount = 0;
+                let unknownWords = [];
+                let entityWords = []; // 被识别为实体的非 COCA 词汇
+                
+                // 使用 Compromise NLP 进行实体识别
+                const hasNlp = typeof nlp !== 'undefined';
+                const isEntity = (word) => {
+                    if (!hasNlp) return false;
+                    try {
+                        const doc = nlp(word);
+                        // 检测是否为人名、地名、组织名等实体
+                        // 首字母大写的单词更可能是实体
+                        const isPerson = doc.people().found;
+                        const isPlace = doc.places().found;
+                        const isOrganization = doc.organizations().found;
+                        // 也检查是否被识别为专有名词
+                        const isProperNoun = doc.match('#ProperNoun').found;
+                        return isPerson || isPlace || isOrganization || isProperNoun;
+                    } catch (e) {
+                        return false;
+                    }
+                };
                 
                 if (cocaEnable) {
-                    // 统计 COCA 范围内和未知词
+                    // 统计 COCA 范围内和未知词（基于去重后的词）
                     for (const item of groupedWords) {
                         if (item.cocaRank === null) {
                             cocaUnknownCount++;
+                            unknownWords.push(item.lemma);
                         } else if (item.cocaRank >= cocaMin && item.cocaRank <= cocaMax) {
                             cocaInRangeCount++;
                         }
+                    }
+                    
+                    // 对不在 COCA 词表中的单词进行实体识别
+                    // 缓存实体识别结果以提高性能
+                    const entityCache = new Map();
+                    let nonEntityUnknownWords = []; // 未被识别为实体的非 COCA 词汇
+                    for (const word of unknownWords) {
+                        const isEnt = isEntity(word);
+                        entityCache.set(word.toLowerCase(), isEnt);
+                        if (isEnt) {
+                            entityWords.push(word);
+                        } else {
+                            nonEntityUnknownWords.push(word);
+                        }
+                    }
+                    
+                    // 输出不在 COCA 词表中的单词到 log
+                    if (unknownWords.length > 0) {
+                        console.log(`=== 不在 COCA 词表中的单词 (共 ${unknownWords.length} 个) ===`);
+                        console.log(unknownWords.join(', '));
+                    }
+                    
+                    // 输出被识别为实体的单词
+                    if (entityWords.length > 0) {
+                        console.log(`=== 被识别为实体的非 COCA 词汇 (共 ${entityWords.length} 个，P98 计算时已过滤) ===`);
+                        console.log(entityWords.join(', '));
+                    }
+                    
+                    // 输出未被识别为实体的非 COCA 词汇
+                    if (nonEntityUnknownWords.length > 0) {
+                        console.log(`=== 未被识别为实体的非 COCA 词汇 (共 ${nonEntityUnknownWords.length} 个，分位点计算时已过滤) ===`);
+                        console.log(nonEntityUnknownWords.join(', '));
+                    }
+                    
+                    // 计算 COCA 排名的 p95 和 p98 分位点（基于所有不去重的单词）
+                    // 只统计在 COCA 词表中的词汇，过滤掉非 COCA 词汇
+                    let allRanks = [];
+                    let nonCocaCount = 0;
+                    for (const pair of wordPairs) {
+                        const rank = this.getCOCARank(pair.lemma);
+                        if (rank !== null) {
+                            allRanks.push(rank);
+                        } else {
+                            // 不在 COCA 词表中，跳过不计入分位点计算
+                            nonCocaCount++;
+                        }
+                    }
+                    
+                    let p95Rank = null;
+                    let p98Rank = null;
+                    if (allRanks.length > 0) {
+                        allRanks.sort((a, b) => a - b);
+                        const p95Index = Math.ceil(allRanks.length * 0.95) - 1;
+                        const p98Index = Math.ceil(allRanks.length * 0.98) - 1;
+                        p95Rank = allRanks[Math.min(p95Index, allRanks.length - 1)];
+                        p98Rank = allRanks[Math.min(p98Index, allRanks.length - 1)];
+                        console.log(`=== COCA 排名分位点统计 ===`);
+                        console.log(`P95: ${p95Rank}, P98: ${p98Rank}`);
+                        console.log(`(基于 ${allRanks.length} 个 COCA 词汇的所有出现，过滤了 ${nonCocaCount} 个非 COCA 词汇出现)`);
                     }
                     
                     // 筛选：只保留 COCA 范围内的词
@@ -1648,12 +1832,21 @@
                     // 显示 COCA 统计
                     document.getElementById('stat-coca-container').style.display = 'block';
                     document.getElementById('stat-coca-unknown-container').style.display = 'block';
+                    document.getElementById('stat-coca-entity-container').style.display = 'block';
+                    document.getElementById('stat-coca-p95-container').style.display = 'block';
+                    document.getElementById('stat-coca-p98-container').style.display = 'block';
                     document.getElementById('stat-coca-in-range').textContent = cocaInRangeCount.toLocaleString();
                     document.getElementById('stat-coca-unknown').textContent = cocaUnknownCount.toLocaleString();
+                    document.getElementById('stat-coca-entity').textContent = entityWords.length.toLocaleString();
+                    document.getElementById('stat-coca-p95').textContent = p95Rank !== null ? p95Rank.toLocaleString() : '-';
+                    document.getElementById('stat-coca-p98').textContent = p98Rank !== null ? p98Rank.toLocaleString() : '-';
                 } else {
                     // 隐藏 COCA 统计
                     document.getElementById('stat-coca-container').style.display = 'none';
                     document.getElementById('stat-coca-unknown-container').style.display = 'none';
+                    document.getElementById('stat-coca-entity-container').style.display = 'none';
+                    document.getElementById('stat-coca-p95-container').style.display = 'none';
+                    document.getElementById('stat-coca-p98-container').style.display = 'none';
                 }
 
                 // 排序
