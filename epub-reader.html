@@ -180,6 +180,11 @@
             transform: translateX(-280px);
             margin-left: -280px;
         }
+        
+        /* 侧边栏遮罩 - 仅移动端使用 */
+        .sidebar-overlay {
+            display: none;
+        }
 
         .sidebar-header {
             padding: 20px;
@@ -1298,24 +1303,70 @@
         .toc-container::-webkit-scrollbar-track { background: var(--sidebar-bg); }
         .toc-container::-webkit-scrollbar-thumb { background: #4a6278; }
 
-        /* 响应式设计 */
+        /* 响应式设计 - 平板 */
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
                 left: 0;
                 top: 0;
                 bottom: 0;
+                width: 280px;
+                z-index: 1000;
+                /* 移动端默认隐藏目录 */
+                transform: translateX(-100%);
+            }
+            .sidebar.expanded {
+                transform: translateX(0);
             }
             .sidebar.collapsed {
                 transform: translateX(-100%);
                 margin-left: 0;
             }
+            
+            /* 侧边栏打开时的遮罩 */
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+            }
+            .sidebar-overlay.active {
+                display: block;
+            }
 
-            .toolbar { padding: 10px 15px; }
-            .settings-panel { right: 10px; left: 10px; width: auto; }
+            /* 工具栏 - 允许换行 */
+            .toolbar {
+                padding: 10px 12px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            
+            .settings-panel { 
+                right: 10px; 
+                left: 10px; 
+                width: auto;
+                top: auto;
+                bottom: 10px;
+                max-height: 70vh;
+            }
+            
             .book-title { display: none; }
-            .progress-indicator { padding: 6px 10px; }
+            
+            .progress-indicator { 
+                padding: 6px 10px;
+                order: 10;
+            }
             .progress-bar-container { width: 50px; }
+
+            /* 统计指示器容器换行 */
+            .stats-group {
+                padding: 4px 6px;
+                gap: 4px;
+                border-radius: 10px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
 
             /* 统一指示器移动端样式 */
             .indicator,
@@ -1323,9 +1374,9 @@
             .time-indicator,
             .word-count-indicator,
             .read-count-indicator {
-                padding: 5px 10px;
+                padding: 5px 8px;
                 font-size: 11px;
-                gap: 4px;
+                gap: 3px;
                 border-radius: 8px;
             }
             
@@ -1334,25 +1385,54 @@
             }
             
             .speed-unit, .read-count-unit, .word-count-unit {
-                font-size: 10px;
+                font-size: 9px;
             }
             
             .time-icon, .speed-icon, .read-count-icon, .word-count-icon {
+                font-size: 12px;
+            }
+
+            /* 按钮移动端样式 - 更紧凑 */
+            .toggle-sidebar {
+                padding: 8px 12px;
                 font-size: 13px;
             }
             
-            .stats-group {
-                padding: 4px 6px;
-                gap: 6px;
-                border-radius: 10px;
-            }
-
-            /* 统一按钮移动端样式 */
+            .settings-btn,
             .library-btn,
             .vocab-btn,
-            .looked-up-btn {
+            .looked-up-btn,
+            .upload-btn {
                 padding: 8px 10px;
                 font-size: 12px;
+            }
+
+            /* 阅读区域移动端适配 */
+            .reader-container {
+                padding: 15px;
+            }
+            
+            .reader-content {
+                padding: 25px 20px;
+                border-radius: 6px;
+            }
+
+            /* 欢迎界面移动端 */
+            .drop-zone {
+                padding: 40px 30px;
+            }
+            
+            .welcome-screen svg {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .welcome-screen h2 {
+                font-size: 20px;
+            }
+            
+            .welcome-screen p {
+                font-size: 14px;
             }
 
             /* 模态框移动端适配 */
@@ -1370,7 +1450,7 @@
                 padding: 14px 16px;
             }
 
-            .book-title {
+            .library-book .book-title {
                 display: flex !important;
                 font-size: 15px;
             }
@@ -1432,6 +1512,288 @@
             .vocab-footer button { 
                 width: 100%;
                 padding: 14px 20px;
+            }
+            
+            /* 词汇标注浮窗移动端 */
+            .annotation-tooltip {
+                min-width: 150px;
+                max-width: 280px;
+                font-size: 13px;
+                padding: 8px 12px;
+            }
+        }
+        
+        /* 响应式设计 - 手机 */
+        @media (max-width: 480px) {
+            /* 工具栏更紧凑 */
+            .toolbar {
+                padding: 8px 10px;
+                gap: 6px;
+            }
+            
+            /* 统计指示器 - 隐藏部分文字 */
+            .stats-group {
+                padding: 3px 5px;
+                gap: 3px;
+            }
+            
+            .speed-unit, .read-count-unit, .word-count-unit {
+                display: none;
+            }
+            
+            .indicator,
+            .speed-indicator,
+            .time-indicator,
+            .word-count-indicator,
+            .read-count-indicator {
+                padding: 4px 6px;
+                font-size: 10px;
+                gap: 2px;
+            }
+            
+            .time-value, .speed-value, .read-count-value, .word-count-value {
+                font-size: 11px;
+            }
+            
+            .time-icon, .speed-icon, .read-count-icon, .word-count-icon {
+                font-size: 11px;
+            }
+            
+            /* 按钮只显示图标 */
+            .toggle-sidebar {
+                padding: 8px 10px;
+                font-size: 14px;
+            }
+            .toggle-sidebar::after {
+                content: none;
+            }
+            
+            .settings-btn,
+            .library-btn,
+            .vocab-btn,
+            .looked-up-btn,
+            .upload-btn {
+                padding: 8px;
+                font-size: 14px;
+                min-width: 36px;
+                text-align: center;
+            }
+            
+            /* 隐藏按钮文字，只保留图标 */
+            .settings-btn { font-size: 0; }
+            .settings-btn::before { content: '⚙'; font-size: 16px; }
+            
+            .library-btn { font-size: 0; }
+            .library-btn::before { content: '📚'; font-size: 16px; }
+            
+            .vocab-btn { font-size: 0; }
+            .vocab-btn::before { content: '📖'; font-size: 16px; }
+            
+            .looked-up-btn { font-size: 0; }
+            .looked-up-btn::before { content: '🔍'; font-size: 16px; }
+            
+            .upload-btn { font-size: 0; }
+            .upload-btn::before { content: '📂'; font-size: 16px; }
+            
+            .toggle-sidebar { font-size: 0; }
+            .toggle-sidebar::before { content: '☰'; font-size: 16px; }
+            
+            /* 阅读区域 */
+            .reader-container {
+                padding: 10px;
+            }
+            
+            .reader-content {
+                padding: 20px 15px;
+                font-size: 16px;
+                line-height: 1.7;
+            }
+            
+            .reader-content h1 { font-size: 1.6em; }
+            .reader-content h2 { font-size: 1.4em; }
+            .reader-content h3 { font-size: 1.2em; }
+            
+            /* 欢迎界面 */
+            .drop-zone {
+                padding: 30px 20px;
+            }
+            
+            .welcome-screen svg {
+                width: 60px;
+                height: 60px;
+                margin-bottom: 20px;
+            }
+            
+            .welcome-screen h2 {
+                font-size: 18px;
+            }
+            
+            .welcome-screen p {
+                font-size: 13px;
+                margin-bottom: 20px;
+            }
+            
+            /* 侧边栏 */
+            .sidebar {
+                width: 85vw;
+                max-width: 300px;
+            }
+            
+            .sidebar-header {
+                padding: 15px;
+            }
+            
+            .toc-item {
+                padding: 10px 15px;
+                font-size: 13px;
+            }
+            
+            /* 设置面板 */
+            .settings-panel {
+                right: 5px;
+                left: 5px;
+                padding: 20px 15px;
+                max-height: 65vh;
+            }
+            
+            .setting-group {
+                margin-bottom: 15px;
+            }
+            
+            /* 模态框 */
+            .library-content,
+            .vocab-content,
+            .modal-content {
+                width: 98%;
+                max-height: 95vh;
+                border-radius: 12px;
+            }
+            
+            .library-header,
+            .vocab-header {
+                padding: 16px;
+            }
+            
+            .library-header h2,
+            .vocab-header h2 {
+                font-size: 16px;
+            }
+            
+            .library-book {
+                padding: 12px;
+            }
+            
+            .book-actions button {
+                padding: 10px 12px;
+                font-size: 12px;
+            }
+            
+            /* 词汇标注浮窗 */
+            .annotation-tooltip {
+                min-width: 120px;
+                max-width: 200px;
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+            
+            /* 进度指示器 */
+            .progress-indicator {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+            
+            .progress-bar-container {
+                width: 40px;
+            }
+        }
+        
+        /* 超小屏幕 */
+        @media (max-width: 360px) {
+            .toolbar {
+                padding: 6px 8px;
+                gap: 4px;
+            }
+            
+            .stats-group {
+                display: none;
+            }
+            
+            .settings-btn,
+            .library-btn,
+            .vocab-btn,
+            .looked-up-btn,
+            .upload-btn,
+            .toggle-sidebar {
+                padding: 6px;
+                min-width: 32px;
+            }
+            
+            .reader-content {
+                padding: 15px 12px;
+                font-size: 15px;
+            }
+        }
+        
+        /* 触摸设备优化 */
+        @media (hover: none) and (pointer: coarse) {
+            /* 增大触摸目标 */
+            .toc-item {
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+            }
+            
+            .btn,
+            .settings-btn,
+            .library-btn,
+            .vocab-btn,
+            .looked-up-btn,
+            .upload-btn,
+            .toggle-sidebar {
+                min-height: 44px;
+            }
+            
+            /* 词汇项触摸优化 */
+            .vocab-word {
+                min-height: 48px;
+            }
+            
+            .vocab-word-delete {
+                opacity: 1;
+                min-width: 44px;
+                min-height: 44px;
+            }
+            
+            /* 移除hover效果的延迟 */
+            .annotation-word:hover .annotation-tooltip {
+                transition-delay: 0s;
+            }
+        }
+        
+        /* 横屏手机优化 */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .toolbar {
+                padding: 6px 10px;
+            }
+            
+            .reader-container {
+                padding: 10px;
+            }
+            
+            .reader-content {
+                padding: 15px 20px;
+            }
+            
+            .settings-panel {
+                max-height: 80vh;
+                top: 50px;
+                bottom: auto;
+            }
+            
+            .modal-content,
+            .library-content,
+            .vocab-content {
+                max-height: 90vh;
             }
         }
 
@@ -1509,6 +1871,7 @@
     <button class="word-action-btn" id="word-action-btn">+ 加入已知词汇表</button>
 
     <div class="container">
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <h2>目录</h2>
@@ -3518,8 +3881,43 @@
                 });
 
                 // 侧边栏切换
-                document.getElementById('toggle-sidebar').addEventListener('click', () => {
-                    document.getElementById('sidebar').classList.toggle('collapsed');
+                const sidebar = document.getElementById('sidebar');
+                const sidebarOverlay = document.getElementById('sidebar-overlay');
+                
+                const isMobile = () => window.innerWidth <= 768;
+                
+                const toggleSidebar = () => {
+                    if (isMobile()) {
+                        // 移动端：使用 expanded 类控制显示
+                        const isExpanded = sidebar.classList.toggle('expanded');
+                        sidebarOverlay.classList.toggle('active', isExpanded);
+                    } else {
+                        // 桌面端：使用 collapsed 类控制隐藏
+                        sidebar.classList.toggle('collapsed');
+                    }
+                };
+                
+                const closeSidebar = () => {
+                    if (isMobile()) {
+                        sidebar.classList.remove('expanded');
+                    } else {
+                        sidebar.classList.add('collapsed');
+                    }
+                    sidebarOverlay.classList.remove('active');
+                };
+                
+                document.getElementById('toggle-sidebar').addEventListener('click', toggleSidebar);
+                
+                // 点击遮罩关闭侧边栏
+                sidebarOverlay.addEventListener('click', closeSidebar);
+                
+                // 窗口大小变化时处理状态
+                window.addEventListener('resize', () => {
+                    if (!isMobile()) {
+                        // 切换到桌面端时，移除移动端相关类
+                        sidebar.classList.remove('expanded');
+                        sidebarOverlay.classList.remove('active');
+                    }
                 });
 
                 // 拖放支持
