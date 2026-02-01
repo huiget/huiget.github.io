@@ -523,7 +523,218 @@
         }
         .modal-close:hover { color: var(--text-primary); }
 
-        /* 书架模态框 - 复用通用模态框样式，参见 .modal, .modal-content, .modal-header, .modal-close */
+        /* 书架模态框 */
+        .library-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .library-content {
+            background: linear-gradient(135deg, #fefefe 0%, #f8f9fa 100%);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 640px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            animation: slideUp 0.3s ease;
+        }
+
+        .library-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 28px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #5a9fd4 100%);
+            color: white;
+        }
+
+        .library-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .library-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .library-close:hover { 
+            background: rgba(255,255,255,0.3);
+            transform: rotate(90deg);
+        }
+
+        .library-books {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .library-books::-webkit-scrollbar {
+            width: 6px;
+        }
+        .library-books::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .library-books::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 3px;
+        }
+
+        .library-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .library-empty::before {
+            content: '📖';
+            display: block;
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* 书籍卡片 */
+        .library-book {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: all 0.2s ease;
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+        .library-book:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        /* 词汇表模态框 - 与书架样式统一 */
+        .vocab-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .vocab-content {
+            background: linear-gradient(135deg, #fefefe 0%, #f8f9fa 100%);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            animation: slideUp 0.3s ease;
+        }
+
+        .vocab-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 28px;
+            background: linear-gradient(135deg, var(--teal-color) 0%, #1abc9c 100%);
+            color: white;
+        }
+
+        /* 已查询词表使用紫色 */
+        .looked-up-modal .vocab-header {
+            background: linear-gradient(135deg, var(--purple-color) 0%, #a569bd 100%);
+        }
+
+        .vocab-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .vocab-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .vocab-close:hover { 
+            background: rgba(255,255,255,0.3);
+            transform: rotate(90deg);
+        }
+
+        .vocab-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .vocab-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .vocab-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .vocab-list::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 3px;
+        }
 
         /* 通用列表项样式 */
         .list-item {
@@ -561,51 +772,127 @@
         }
 
         .book-title {
-            font-size: 15px;
-            font-weight: 500;
+            font-size: 16px;
+            font-weight: 600;
             color: var(--text-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .book-title-text {
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-bottom: 5px;
+            flex: 1;
+            min-width: 0;
         }
 
         .file-type-badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: var(--radius-sm);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 8px;
+            border-radius: 6px;
             font-size: 10px;
-            font-weight: 600;
-            margin-right: 8px;
-            vertical-align: middle;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
         }
-        .file-type-badge.epub { background: #e8f5e9; color: #2e7d32; }
-        .file-type-badge.pdf { background: #ffebee; color: #c62828; }
+        .file-type-badge.epub { 
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); 
+            color: #2e7d32; 
+            box-shadow: 0 2px 4px rgba(46, 125, 50, 0.15);
+        }
+        .file-type-badge.pdf { 
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); 
+            color: #c62828; 
+            box-shadow: 0 2px 4px rgba(198, 40, 40, 0.15);
+        }
 
         .book-meta {
             display: flex;
-            gap: 12px;
-            font-size: 12px;
+            align-items: center;
+            gap: 16px;
+            font-size: 13px;
             color: var(--text-muted);
         }
-        .book-progress { color: var(--primary-color); font-weight: 500; }
-        .book-time { color: var(--success-color); }
+
+        .book-author {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .book-progress { 
+            color: var(--primary-color); 
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .book-progress-bar {
+            width: 60px;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .book-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color) 0%, #5a9fd4 100%);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .book-time { 
+            color: var(--success-color);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .book-time::before {
+            content: '⏱';
+            font-size: 12px;
+        }
 
         .book-actions {
             display: flex;
-            gap: 8px;
-            margin-left: 15px;
+            gap: 10px;
+            margin-left: 20px;
+            flex-shrink: 0;
+        }
+
+        .book-open, .book-delete {
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+            color: white;
         }
 
         .book-open {
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color) 0%, #5a9fd4 100%);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
         }
-        .book-open:hover { background: var(--primary-hover); }
+        .book-open:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(52, 152, 219, 0.4);
+        }
 
         .book-delete {
-            background: var(--danger-color);
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
         }
-        .book-delete:hover { background: var(--danger-hover); }
+        .book-delete:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(231, 76, 60, 0.4);
+        }
 
         /* 选词浮动按钮 */
         .word-action-btn {
@@ -647,102 +934,225 @@
         }
         .vocab-btn:hover { background: var(--teal-hover); }
 
-        /* 词汇表模态框 - 复用 .modal, .modal-content, .modal-header 样式 */
-        .vocab-content { max-width: 700px; }
+        /* 已查询词表按钮 */
+        .looked-up-btn {
+            background: var(--purple-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 14px;
+            transition: background var(--transition-fast);
+        }
+        .looked-up-btn:hover { background: var(--purple-hover); }
 
         .vocab-header-actions {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             align-items: center;
         }
 
         .vocab-search {
-            padding: 8px 12px;
-            border: 2px solid var(--border-color);
-            border-radius: var(--radius-md);
+            padding: 10px 16px;
+            border: none;
+            border-radius: 20px;
             font-size: 14px;
             width: 200px;
             outline: none;
-            transition: border-color var(--transition-fast);
+            background: rgba(255,255,255,0.2);
+            color: white;
+            transition: all 0.2s ease;
         }
-        .vocab-search:focus { border-color: var(--primary-color); }
+        .vocab-search::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+        .vocab-search:focus { 
+            background: rgba(255,255,255,0.3);
+            box-shadow: 0 0 0 3px rgba(255,255,255,0.2);
+        }
 
         /* .vocab-close 复用 .modal-close 样式 */
 
         .vocab-stats {
-            padding: 12px 25px;
-            background: var(--bg-lighter);
-            border-bottom: 1px solid #eee;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             font-size: 13px;
             color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .vocab-stats::before {
+            content: '📊';
+            font-size: 14px;
         }
 
-        /* .vocab-list 复用 .list-body 样式 */
+        /* 词汇卡片样式 */
         .vocab-word {
-            padding: 12px 25px;
+            padding: 14px 18px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            transition: all 0.2s ease;
+            border: 1px solid rgba(0,0,0,0.04);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .vocab-word:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
         }
 
         .vocab-word-text {
-            font-size: 15px;
+            font-size: 16px;
             color: var(--text-primary);
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .vocab-word-meta {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             align-items: center;
         }
 
         .vocab-word-date {
             font-size: 12px;
             color: var(--text-muted);
+            background: #f1f3f4;
+            padding: 4px 10px;
+            border-radius: 12px;
         }
 
         .vocab-word-delete {
-            background: var(--danger-color);
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
             opacity: 0;
-            transition: opacity var(--transition-fast);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
         }
         .vocab-word:hover .vocab-word-delete { opacity: 1; }
-        .vocab-word-delete:hover { background: var(--danger-hover); }
+        .vocab-word-delete:hover { 
+            transform: translateY(-1px) scale(1.1);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+        }
 
         .vocab-empty {
             text-align: center;
-            padding: 40px 25px;
+            padding: 60px 25px;
             color: var(--text-muted);
             font-size: 14px;
+            line-height: 1.6;
+        }
+        .vocab-empty::before {
+            content: '📝';
+            display: block;
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        .looked-up-modal .vocab-empty::before {
+            content: '🔍';
         }
 
         .vocab-footer {
-            padding: 15px 25px;
+            padding: 18px 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
             border-top: 1px solid #eee;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 12px;
         }
 
         .vocab-export-btn {
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color) 0%, #5a9fd4 100%);
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: var(--radius-md);
+            padding: 12px 20px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
         }
-        .vocab-export-btn:hover { background: var(--primary-hover); }
+        .vocab-export-btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(52, 152, 219, 0.4);
+        }
 
         .vocab-clear-btn {
-            background: var(--danger-color);
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: var(--radius-md);
+            padding: 12px 20px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
         }
-        .vocab-clear-btn:hover { background: var(--danger-hover); }
+        .vocab-clear-btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(231, 76, 60, 0.4);
+        }
+
+        /* 已查询词表特有样式 */
+        .looked-up-word {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .looked-up-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .looked-up-translation {
+            color: var(--text-secondary);
+            font-size: 14px;
+            flex: 1;
+        }
+
+        .looked-up-rank {
+            color: white;
+            font-size: 11px;
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .looked-up-count {
+            color: var(--purple-color);
+            font-size: 12px;
+            font-weight: 600;
+            background: #f3e5f5;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .looked-up-word .vocab-word-meta {
+            width: 100%;
+            justify-content: flex-end;
+        }
 
         /* 阅读区域 */
         .reader-container {
@@ -938,7 +1348,8 @@
 
             /* 统一按钮移动端样式 */
             .library-btn,
-            .vocab-btn {
+            .vocab-btn,
+            .looked-up-btn {
                 padding: 8px 10px;
                 font-size: 12px;
             }
@@ -953,32 +1364,74 @@
 
             .library-book {
                 flex-direction: column;
-                align-items: flex-start;
+                align-items: stretch;
+                gap: 12px;
+                padding: 14px 16px;
+            }
+
+            .book-title {
+                display: flex !important;
+                font-size: 15px;
+            }
+
+            .book-meta {
+                flex-wrap: wrap;
                 gap: 10px;
             }
 
             .book-actions {
                 margin-left: 0;
                 width: 100%;
+                gap: 8px;
             }
-            .book-actions button { flex: 1; }
+            .book-actions button { 
+                flex: 1; 
+                padding: 12px 16px;
+            }
 
             .vocab-header {
                 flex-direction: column;
-                gap: 10px;
+                gap: 12px;
                 align-items: stretch;
+                padding: 20px;
             }
 
-            .vocab-header-actions { width: 100%; }
-            .vocab-search { flex: 1; width: auto; }
-            .vocab-word { padding: 10px 15px; }
+            .vocab-header h2 {
+                font-size: 18px;
+            }
+
+            .vocab-header-actions { 
+                width: 100%;
+                flex-direction: row-reverse;
+            }
+            .vocab-search { 
+                flex: 1; 
+                width: auto;
+                padding: 10px 14px;
+            }
+            .vocab-word { 
+                padding: 12px 14px;
+            }
             .vocab-word-delete { opacity: 1; }
+
+            .vocab-word-meta {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .looked-up-word .vocab-word-meta {
+                justify-content: flex-start;
+            }
 
             .vocab-footer {
                 flex-direction: column;
                 gap: 10px;
+                padding: 16px;
             }
-            .vocab-footer button { width: 100%; }
+            .vocab-footer button { 
+                width: 100%;
+                padding: 14px 20px;
+            }
         }
 
         /* 词汇标注浮窗样式 */
@@ -1048,7 +1501,7 @@
     </div>
 
     <!-- 选词浮动按钮 -->
-    <button class="word-action-btn" id="word-action-btn">+ 加入词汇表</button>
+    <button class="word-action-btn" id="word-action-btn">+ 加入已知词汇表</button>
 
     <div class="container">
         <aside class="sidebar" id="sidebar">
@@ -1095,7 +1548,8 @@
                 </div>
                 <button class="settings-btn" id="settings-btn">⚙ 设置</button>
                 <button class="library-btn" id="library-btn">📚 书架</button>
-                <button class="vocab-btn" id="vocab-btn">📖 词汇表</button>
+                <button class="vocab-btn" id="vocab-btn">📖 已知词汇表</button>
+                <button class="looked-up-btn" id="looked-up-btn">🔍 已查询词表</button>
                 <label class="upload-btn" for="file-input">📂 打开文件</label>
                 <input type="file" id="file-input" accept=".epub,.pdf">
             </div>
@@ -1217,13 +1671,14 @@
         const CONFIG = {
             // 数据库配置
             DB_NAME: 'EPUBReaderDB',
-            DB_VERSION: 5,
+            DB_VERSION: 6,
             STORES: {
                 BOOKS: 'books',
                 PROGRESS: 'progress',
                 TRANSLATIONS: 'translations',
                 KNOWN_WORDS: 'knownWords',
-                OFFLINE_DICT: 'offlineDict'
+                OFFLINE_DICT: 'offlineDict',
+                LOOKED_UP_WORDS: 'lookedUpWords'
             },
             
             // 时间间隔（毫秒）
@@ -1400,7 +1855,7 @@
                     
                     request.onupgradeneeded = (e) => {
                         const db = e.target.result;
-                        const { BOOKS, PROGRESS, TRANSLATIONS, KNOWN_WORDS, OFFLINE_DICT } = this.stores;
+                        const { BOOKS, PROGRESS, TRANSLATIONS, KNOWN_WORDS, OFFLINE_DICT, LOOKED_UP_WORDS } = this.stores;
                         
                         // 书籍存储
                         if (!db.objectStoreNames.contains(BOOKS)) {
@@ -1427,6 +1882,12 @@
                         // 离线词典存储
                         if (!db.objectStoreNames.contains(OFFLINE_DICT)) {
                             db.createObjectStore(OFFLINE_DICT, { keyPath: 'id' });
+                        }
+                        
+                        // 已查询词汇存储（记录悬停查看过的词汇）
+                        if (!db.objectStoreNames.contains(LOOKED_UP_WORDS)) {
+                            const lookedUpStore = db.createObjectStore(LOOKED_UP_WORDS, { keyPath: 'word' });
+                            lookedUpStore.createIndex('lookedUpAt', 'lookedUpAt', { unique: false });
                         }
                     };
                 });
@@ -1595,6 +2056,45 @@
                 return Utils.promisifyRequest(store.clear());
             }
 
+            // 添加已查询词汇（悬停查看过的词汇）
+            async addLookedUpWord(word, translation, rank) {
+                try {
+                    const existing = await this._simpleGet(this.stores.LOOKED_UP_WORDS, word.toLowerCase());
+                    return this._simplePut(this.stores.LOOKED_UP_WORDS, {
+                        word: word.toLowerCase(),
+                        translation,
+                        rank,
+                        lookedUpAt: existing?.lookedUpAt || Date.now(),
+                        lastLookedUpAt: Date.now(),
+                        count: (existing?.count || 0) + 1
+                    });
+                } catch (e) {
+                    console.warn('添加已查询词汇失败:', e);
+                }
+            }
+
+            // 移除已查询词汇
+            async removeLookedUpWord(word) {
+                return this._simpleDelete(this.stores.LOOKED_UP_WORDS, word.toLowerCase());
+            }
+
+            // 获取所有已查询词汇
+            async getAllLookedUpWords() {
+                try {
+                    const words = await this._simpleGetAll(this.stores.LOOKED_UP_WORDS) || [];
+                    return words.sort((a, b) => (b.lastLookedUpAt || 0) - (a.lastLookedUpAt || 0));
+                } catch (e) {
+                    console.warn('获取已查询词汇失败:', e);
+                    return [];
+                }
+            }
+
+            // 清空所有已查询词汇
+            async clearAllLookedUpWords() {
+                const store = this._getStore(this.stores.LOOKED_UP_WORDS, 'readwrite');
+                return Utils.promisifyRequest(store.clear());
+            }
+
             // 获取最近阅读的书籍ID
             getLastBookId() {
                 return localStorage.getItem('epubLastBookId');
@@ -1659,6 +2159,9 @@
                 // 词汇表状态
                 this.knownWords = new Set();
                 this.selectedWordInfo = null;
+                
+                // 已查询词汇状态（悬停查看过的词汇）
+                this.lookedUpWords = new Map();
                 
                 // 离线词典状态
                 this.offlineDict = new Map();
@@ -1764,11 +2267,12 @@
             async initStorage() {
                 try {
                     await this.bookStorage.init();
-                    // 并行加载COCA词频表、翻译缓存、已知词汇和离线词典
+                    // 并行加载COCA词频表、翻译缓存、已知词汇、已查询词汇和离线词典
                     await Promise.all([
                         this.loadCOCAList(),
                         this.initTranslationCache(),
                         this.initKnownWords(),
+                        this.initLookedUpWords(),
                         this.loadOfflineDict()
                     ]);
                     await this.loadLastBook();
@@ -1881,6 +2385,18 @@
                 }
             }
 
+            // 初始化已查询词表
+            async initLookedUpWords() {
+                try {
+                    const words = await this.bookStorage.getAllLookedUpWords();
+                    this.lookedUpWords = new Map(words.map(w => [w.word, w]));
+                    console.log(`已查询词表加载完成，共 ${this.lookedUpWords.size} 个词`);
+                } catch (e) {
+                    console.warn('加载已查询词表失败:', e);
+                    this.lookedUpWords = new Map();
+                }
+            }
+
             // 加载上次打开的书籍
             async loadLastBook() {
                 try {
@@ -1937,10 +2453,6 @@
             async showLibrary() {
                 const books = await this.bookStorage.getAllBooks();
                 
-                if (books.length === 0) {
-                    return;
-                }
-                
                 // 获取每本书的进度
                 const booksWithProgress = await Promise.all(books.map(async (book) => {
                     const progress = await this.bookStorage.getProgress(book.id);
@@ -1957,29 +2469,36 @@
                 modal.innerHTML = `
                     <div class="library-content">
                         <div class="library-header">
-                            <h2>阅读历史</h2>
+                            <h2>📚 我的书架</h2>
                             <button class="library-close" id="library-close">✕</button>
                         </div>
                         <div class="library-books" id="library-books">
-                            ${books.map(book => {
+                            ${books.length === 0 ? `
+                                <div class="library-empty">
+                                    书架为空<br>打开 EPUB 或 PDF 文件后会自动添加到书架
+                                </div>
+                            ` : books.map(book => {
                                 const fileType = book.fileType || (book.fileName.toLowerCase().endsWith('.pdf') ? 'pdf' : 'epub');
                                 return `
                                 <div class="library-book" data-book-id="${book.id}">
                                     <div class="book-info">
                                         <div class="book-title">
                                             <span class="file-type-badge ${fileType}">${fileType.toUpperCase()}</span>
-                                            ${book.title || book.fileName}
+                                            <span class="book-title-text">${book.title || book.fileName}</span>
                                         </div>
                                         <div class="book-meta">
                                             ${book.author ? `<span class="book-author">${book.author}</span>` : ''}
-                                            <span class="book-progress">${book.progress ? book.progress.scrollPercentage + '%' : '0%'}</span>
+                                            <span class="book-progress">
+                                                <span class="book-progress-bar"><span class="book-progress-fill" style="width: ${book.progress ? book.progress.scrollPercentage : 0}%"></span></span>
+                                                ${book.progress ? book.progress.scrollPercentage : 0}%
+                                            </span>
                                             ${book.progress && book.progress.totalReadingTime ? 
                                                 `<span class="book-time">已读 ${this.formatReadingTime(book.progress.totalReadingTime)}</span>` : ''}
                                         </div>
                                     </div>
                                     <div class="book-actions">
-                                        <button class="book-open" data-book-id="${book.id}">打开</button>
-                                        <button class="book-delete" data-book-id="${book.id}">删除</button>
+                                        <button class="book-open" data-book-id="${book.id}">📖 打开</button>
+                                        <button class="book-delete" data-book-id="${book.id}">🗑 删除</button>
                                     </div>
                                 </div>
                             `;}).join('')}
@@ -3102,8 +3621,19 @@
                     this.showVocabularyModal();
                 });
 
+                // 已查询词表按钮
+                const lookedUpBtn = document.getElementById('looked-up-btn');
+                if (lookedUpBtn) {
+                    lookedUpBtn.addEventListener('click', () => {
+                        this.showLookedUpWordsModal();
+                    });
+                }
+
                 // 选词浮动按钮
                 this.initWordSelection();
+                
+                // 初始化词汇悬停记录
+                this.initWordHoverTracking();
             }
 
             // 初始化选词功能
@@ -3134,6 +3664,232 @@
                         await this.toggleKnownWord(this.selectedWordInfo.lemma);
                     }
                 });
+            }
+
+            // 初始化词汇悬停追踪
+            initWordHoverTracking() {
+                try {
+                    const readerContainer = document.getElementById('reader-container');
+                    if (!readerContainer) return;
+                    
+                    // 记录已处理的词汇和时间戳，避免短时间内重复记录
+                    const recentlyRecorded = new Map();
+                    const RECORD_COOLDOWN = 5000; // 5秒冷却时间
+                    
+                    // 使用 mouseover 事件委托监听悬停
+                    readerContainer.addEventListener('mouseover', (e) => {
+                        try {
+                            const annotationWord = e.target.closest('.annotation-word');
+                            if (!annotationWord) return;
+                            
+                            const tooltip = annotationWord.querySelector('.annotation-tooltip');
+                            if (!tooltip) return;
+                            
+                            const word = annotationWord.textContent.replace(tooltip.textContent, '').trim().toLowerCase();
+                            if (!word) return;
+                            
+                            // 检查冷却时间
+                            const lastRecorded = recentlyRecorded.get(word);
+                            const now = Date.now();
+                            if (lastRecorded && (now - lastRecorded) < RECORD_COOLDOWN) return;
+                            
+                            recentlyRecorded.set(word, now);
+                            this.recordLookedUpWord(annotationWord);
+                        } catch (e) {
+                            // 忽略悬停追踪错误
+                        }
+                    });
+                } catch (e) {
+                    console.warn('初始化词汇悬停追踪失败:', e);
+                }
+            }
+
+            // 记录查询的单词
+            recordLookedUpWord(element) {
+                try {
+                    const tooltip = element.querySelector('.annotation-tooltip');
+                    if (!tooltip) return;
+                    
+                    // 获取单词：排除 tooltip 的文本
+                    const tooltipText = tooltip.textContent;
+                    const word = element.textContent.replace(tooltipText, '').trim().toLowerCase();
+                    if (!word) return;
+                    
+                    // 解析浮窗内容: "翻译 [COCA: 排名]"
+                    const match = tooltipText.match(/^(.+?)\s*\[COCA:\s*(\d+)\]$/);
+                    if (!match) return;
+                    
+                    const translation = match[1].trim();
+                    const rank = parseInt(match[2], 10);
+                    
+                    // 异步保存，不阻塞
+                    this.bookStorage.addLookedUpWord(word, translation, rank).then(() => {
+                        // 更新内存缓存
+                        const existing = this.lookedUpWords.get(word);
+                        this.lookedUpWords.set(word, {
+                            word,
+                            translation,
+                            rank,
+                            lookedUpAt: existing?.lookedUpAt || Date.now(),
+                            lastLookedUpAt: Date.now(),
+                            count: (existing?.count || 0) + 1
+                        });
+                    }).catch(e => {
+                        console.warn('记录查询词汇失败:', e);
+                    });
+                } catch (e) {
+                    console.warn('记录查询词汇失败:', e);
+                }
+            }
+
+            // 显示已查询词表模态框
+            async showLookedUpWordsModal() {
+                const words = await this.bookStorage.getAllLookedUpWords();
+                this.renderLookedUpWordsModal(words);
+            }
+
+            // 渲染已查询词表模态框
+            renderLookedUpWordsModal(words, filterText = '') {
+                // 过滤词汇
+                const filteredWords = filterText 
+                    ? words.filter(w => w.word.includes(filterText.toLowerCase()) || w.translation.includes(filterText))
+                    : words;
+
+                const modal = document.createElement('div');
+                modal.className = 'vocab-modal looked-up-modal';
+                modal.id = 'looked-up-modal';
+                modal.innerHTML = `
+                    <div class="vocab-content">
+                        <div class="vocab-header">
+                            <h2>🔍 已查询词表</h2>
+                            <div class="vocab-header-actions">
+                                <input type="text" class="vocab-search" id="looked-up-search" placeholder="搜索词汇..." value="${filterText}">
+                                <button class="vocab-close" id="looked-up-close">✕</button>
+                            </div>
+                        </div>
+                        <div class="vocab-stats">
+                            共 ${words.length} 个词汇${filterText ? `，显示 ${filteredWords.length} 个匹配结果` : ''}
+                        </div>
+                        <div class="vocab-list" id="looked-up-list">
+                            ${filteredWords.length === 0 ? `
+                                <div class="vocab-empty">
+                                    ${filterText ? '没有找到匹配的词汇' : '已查询词表为空，悬停在标注词汇上查看词义后会自动记录'}
+                                </div>
+                            ` : filteredWords.map(word => `
+                                <div class="vocab-word looked-up-word" data-word="${word.word}">
+                                    <div class="looked-up-main">
+                                        <span class="vocab-word-text">${word.word}</span>
+                                        <span class="looked-up-translation">${word.translation}</span>
+                                        <span class="looked-up-rank">[COCA: ${word.rank}]</span>
+                                    </div>
+                                    <div class="vocab-word-meta">
+                                        <span class="looked-up-count">查看 ${word.count} 次</span>
+                                        <span class="vocab-word-date">${this.formatDate(word.lastLookedUpAt)}</span>
+                                        <button class="vocab-word-delete" data-word="${word.word}">🗑</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="vocab-footer">
+                            <button class="vocab-export-btn" id="looked-up-export">📥 导出词表</button>
+                            <button class="vocab-clear-btn" id="looked-up-clear">🗑 清空全部</button>
+                        </div>
+                    </div>
+                `;
+
+                // 移除已存在的模态框
+                const existingModal = document.getElementById('looked-up-modal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+
+                document.body.appendChild(modal);
+
+                // 关闭按钮
+                document.getElementById('looked-up-close').addEventListener('click', () => {
+                    modal.remove();
+                });
+
+                // 点击背景关闭
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.remove();
+                    }
+                });
+
+                // 搜索功能
+                let searchTimeout = null;
+                document.getElementById('looked-up-search').addEventListener('input', (e) => {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        modal.remove();
+                        this.renderLookedUpWordsModal(words, e.target.value);
+                        // 聚焦到搜索框并保持光标位置
+                        const searchInput = document.getElementById('looked-up-search');
+                        if (searchInput) {
+                            searchInput.focus();
+                            searchInput.setSelectionRange(e.target.value.length, e.target.value.length);
+                        }
+                    }, 300);
+                });
+
+                // 删除单个词汇
+                modal.querySelectorAll('.vocab-word-delete').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const word = btn.dataset.word;
+                        await this.bookStorage.removeLookedUpWord(word);
+                        this.lookedUpWords.delete(word);
+                        btn.closest('.vocab-word').remove();
+                        // 更新统计
+                        const statsEl = modal.querySelector('.vocab-stats');
+                        const newWords = await this.bookStorage.getAllLookedUpWords();
+                        const newFiltered = filterText 
+                            ? newWords.filter(w => w.word.includes(filterText.toLowerCase()) || w.translation.includes(filterText))
+                            : newWords;
+                        statsEl.textContent = `共 ${newWords.length} 个词汇${filterText ? `，显示 ${newFiltered.length} 个匹配结果` : ''}`;
+                        
+                        // 如果列表为空，显示空状态
+                        if (newFiltered.length === 0) {
+                            document.getElementById('looked-up-list').innerHTML = `
+                                <div class="vocab-empty">
+                                    ${filterText ? '没有找到匹配的词汇' : '已查询词表为空，悬停在标注词汇上查看词义后会自动记录'}
+                                </div>
+                            `;
+                        }
+                    });
+                });
+
+                // 导出词汇表
+                document.getElementById('looked-up-export').addEventListener('click', () => {
+                    this.exportLookedUpWords(words);
+                });
+
+                // 清空全部
+                document.getElementById('looked-up-clear').addEventListener('click', async () => {
+                    if (confirm('确定要清空所有已查询词汇吗？此操作不可恢复。')) {
+                        await this.bookStorage.clearAllLookedUpWords();
+                        this.lookedUpWords.clear();
+                        modal.remove();
+                        this.showLookedUpWordsModal();
+                    }
+                });
+            }
+
+            // 导出已查询词表
+            exportLookedUpWords(words) {
+                const content = words.map(w => `${w.word}\t${w.translation}\t${w.rank}\t${w.count}`).join('\n');
+                const header = '单词\t翻译\tCOCA排名\t查看次数\n';
+                const blob = new Blob([header + content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `looked_up_words_${new Date().toISOString().slice(0,10)}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
             }
 
             // 处理文本选择
@@ -3168,10 +3924,10 @@
                 
                 // 更新按钮文本和样式
                 if (isKnown) {
-                    btn.textContent = '- 从词汇表移除';
+                    btn.textContent = '- 从已知词汇表移除';
                     btn.classList.add('remove');
                 } else {
-                    btn.textContent = '+ 加入词汇表';
+                    btn.textContent = '+ 加入已知词汇表';
                     btn.classList.remove('remove');
                 }
 
@@ -3243,7 +3999,7 @@
                 modal.innerHTML = `
                     <div class="vocab-content">
                         <div class="vocab-header">
-                            <h2>已知词汇表</h2>
+                            <h2>📖 已知词汇表</h2>
                             <div class="vocab-header-actions">
                                 <input type="text" class="vocab-search" id="vocab-search" placeholder="搜索词汇..." value="${filterText}">
                                 <button class="vocab-close" id="vocab-close">✕</button>
@@ -3255,21 +4011,21 @@
                         <div class="vocab-list" id="vocab-list">
                             ${filteredWords.length === 0 ? `
                                 <div class="vocab-empty">
-                                    ${filterText ? '没有找到匹配的词汇' : '词汇表为空，选中单词后点击"加入词汇表"按钮添加'}
+                                    ${filterText ? '没有找到匹配的词汇' : '已知词汇表为空，选中单词后点击"加入已知词汇表"按钮添加'}
                                 </div>
                             ` : filteredWords.map(word => `
                                 <div class="vocab-word" data-lemma="${word.lemma}">
                                     <span class="vocab-word-text">${word.lemma}</span>
                                     <div class="vocab-word-meta">
                                         <span class="vocab-word-date">${this.formatDate(word.addedAt)}</span>
-                                        <button class="vocab-word-delete" data-lemma="${word.lemma}">删除</button>
+                                        <button class="vocab-word-delete" data-lemma="${word.lemma}">🗑</button>
                                     </div>
                                 </div>
                             `).join('')}
                         </div>
                         <div class="vocab-footer">
-                            <button class="vocab-export-btn" id="vocab-export">导出词汇表</button>
-                            <button class="vocab-clear-btn" id="vocab-clear">清空全部</button>
+                            <button class="vocab-export-btn" id="vocab-export">📥 导出词表</button>
+                            <button class="vocab-clear-btn" id="vocab-clear">🗑 清空全部</button>
                         </div>
                     </div>
                 `;
@@ -3330,7 +4086,7 @@
                         if (newFiltered.length === 0) {
                             document.getElementById('vocab-list').innerHTML = `
                                 <div class="vocab-empty">
-                                    ${filterText ? '没有找到匹配的词汇' : '词汇表为空，选中单词后点击"加入词汇表"按钮添加'}
+                                    ${filterText ? '没有找到匹配的词汇' : '已知词汇表为空，选中单词后点击"加入已知词汇表"按钮添加'}
                                 </div>
                             `;
                         }
