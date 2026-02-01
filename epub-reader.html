@@ -1129,6 +1129,7 @@
             color: var(--text-secondary);
             font-size: 14px;
             flex: 1;
+            white-space: pre-line;
         }
 
         .looked-up-rank {
@@ -1468,7 +1469,11 @@
             padding: 6px 12px;
             border-radius: 6px;
             font-size: 14px;
-            white-space: nowrap;
+            white-space: pre-line;
+            min-width: 200px;
+            max-width: 400px;
+            width: max-content;
+            text-align: left;
             z-index: 1000;
             opacity: 0;
             visibility: hidden;
@@ -1675,7 +1680,6 @@
             STORES: {
                 BOOKS: 'books',
                 PROGRESS: 'progress',
-                TRANSLATIONS: 'translations',
                 KNOWN_WORDS: 'knownWords',
                 OFFLINE_DICT: 'offlineDict',
                 LOOKED_UP_WORDS: 'lookedUpWords'
@@ -1855,7 +1859,7 @@
                     
                     request.onupgradeneeded = (e) => {
                         const db = e.target.result;
-                        const { BOOKS, PROGRESS, TRANSLATIONS, KNOWN_WORDS, OFFLINE_DICT, LOOKED_UP_WORDS } = this.stores;
+                        const { BOOKS, PROGRESS, KNOWN_WORDS, OFFLINE_DICT, LOOKED_UP_WORDS } = this.stores;
                         
                         // 书籍存储
                         if (!db.objectStoreNames.contains(BOOKS)) {
@@ -1866,11 +1870,6 @@
                         // 阅读进度存储
                         if (!db.objectStoreNames.contains(PROGRESS)) {
                             db.createObjectStore(PROGRESS, { keyPath: 'bookId' });
-                        }
-                        
-                        // 翻译缓存存储
-                        if (!db.objectStoreNames.contains(TRANSLATIONS)) {
-                            db.createObjectStore(TRANSLATIONS, { keyPath: 'word' });
                         }
                         
                         // 已知词汇存储（跨书本）
@@ -2005,26 +2004,6 @@
                 return this._simpleGet(this.stores.PROGRESS, bookId);
             }
 
-            // 保存翻译到缓存
-            async saveTranslation(word, translation) {
-                return this._simplePut(this.stores.TRANSLATIONS, { 
-                    word, 
-                    translation, 
-                    cachedAt: Date.now() 
-                });
-            }
-
-            // 获取缓存的翻译
-            async getTranslation(word) {
-                const result = await this._simpleGet(this.stores.TRANSLATIONS, word);
-                return result?.translation || null;
-            }
-
-            // 批量获取缓存的翻译
-            async getAllTranslations() {
-                return this._simpleGetAll(this.stores.TRANSLATIONS) || [];
-            }
-
             // 添加已知词汇
             async addKnownWord(lemma) {
                 return this._simplePut(this.stores.KNOWN_WORDS, {
@@ -2151,7 +2130,6 @@
                 this.freqMax = CONFIG.COCA.DEFAULT_MAX;
                 this.learningThreshold = CONFIG.COCA.DEFAULT_THRESHOLD;
                 this.cocaRanks = new Map();
-                this.translationCache = new Map();
                 this.cocaLoaded = false;
                 this.annotationObserver = null;
                 this.annotatedParagraphs = new Set();
@@ -2267,10 +2245,9 @@
             async initStorage() {
                 try {
                     await this.bookStorage.init();
-                    // 并行加载COCA词频表、翻译缓存、已知词汇、已查询词汇和离线词典
+                    // 并行加载COCA词频表、已知词汇、已查询词汇和离线词典
                     await Promise.all([
                         this.loadCOCAList(),
-                        this.initTranslationCache(),
                         this.initKnownWords(),
                         this.initLookedUpWords(),
                         this.loadOfflineDict()
@@ -2371,7 +2348,9 @@
             // 从离线词典查询翻译
             getOfflineTranslation(word) {
                 if (!this.offlineDictLoaded || this.offlineDict.size === 0) return null;
-                return this.offlineDict.get(word.toLowerCase()) || null;
+                const translation = this.offlineDict.get(word.toLowerCase());
+                // 将字面的 \n 转换为真正的换行符
+                return translation ? translation.replace(/\\n/g, '\n') : null;
             }
 
             // 初始化已知词汇表
@@ -2905,19 +2884,6 @@
                 }
             }
 
-            // 初始化翻译缓存
-            async initTranslationCache() {
-                try {
-                    const cached = await this.bookStorage.getAllTranslations();
-                    cached.forEach(item => {
-                        this.translationCache.set(item.word, item.translation);
-                    });
-                    console.log(`翻译缓存加载完成，共 ${this.translationCache.size} 条`);
-                } catch (e) {
-                    console.warn('加载翻译缓存失败:', e);
-                }
-            }
-
             // 调用Google翻译API（查询原词），失败时回退到离线词典
             // 如果开启了离线词典优先，则先查离线词典，查不到再用Google翻译
             async translateWord(word, lemma = null) {
@@ -2987,26 +2953,10 @@
                 return null;
             }
 
-            // 获取翻译（优先从缓存获取）
+            // 获取翻译
             // word: 原词, lemma: 词根形式（可选，用于离线词典备选查询）
             async getTranslation(word, lemma = null) {
-                const lowerWord = word.toLowerCase();
-                
-                // 先检查内存缓存（按原词缓存）
-                if (this.translationCache.has(lowerWord)) {
-                    return this.translationCache.get(lowerWord);
-                }
-                
-                // 调用翻译API
-                const translation = await this.translateWord(word, lemma);
-                if (translation) {
-                    this.translationCache.set(lowerWord, translation);
-                    // 异步保存到IndexedDB
-                    this.bookStorage.saveTranslation(lowerWord, translation).catch(e => {
-                        console.warn('保存翻译缓存失败:', e);
-                    });
-                }
-                return translation;
+                return await this.translateWord(word, lemma);
             }
 
             // 以句子为单位获取所有单词的原形（lemma）和词性
@@ -3878,7 +3828,8 @@
 
             // 导出已查询词表
             exportLookedUpWords(words) {
-                const content = words.map(w => `${w.word}\t${w.translation}\t${w.rank}\t${w.count}`).join('\n');
+                // 将翻译中的换行符替换为分号，避免破坏 TSV 格式
+                const content = words.map(w => `${w.word}\t${(w.translation || '').replace(/\n/g, '; ')}\t${w.rank}\t${w.count}`).join('\n');
                 const header = '单词\t翻译\tCOCA排名\t查看次数\n';
                 const blob = new Blob([header + content], { type: 'text/plain;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
