@@ -1770,6 +1770,32 @@
             }
         }
         
+        /* iOS Safari 点击修复 */
+        button, 
+        .btn,
+        .settings-btn,
+        .library-btn,
+        .vocab-btn,
+        .looked-up-btn,
+        .upload-btn,
+        .toggle-sidebar,
+        .toc-item,
+        .library-book,
+        .vocab-word,
+        [onclick],
+        [role="button"] {
+            -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+            -webkit-touch-callout: none;
+            touch-action: manipulation;
+        }
+        
+        /* 确保按钮可点击 */
+        button:not(:disabled) {
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
         /* 横屏手机优化 */
         @media (max-height: 500px) and (orientation: landscape) {
             .toolbar {
@@ -2035,6 +2061,35 @@
     </div>
 
     <script>
+        // ==================== 全局错误处理 ====================
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error('全局错误:', message, source, lineno, colno, error);
+            // 在开发时可以显示错误
+            // alert('发生错误: ' + message);
+            return false;
+        };
+        
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('未处理的Promise拒绝:', event.reason);
+        });
+        
+        // ==================== 外部库检查 ====================
+        const checkLibraries = () => {
+            const missing = [];
+            if (typeof JSZip === 'undefined') missing.push('JSZip');
+            if (typeof pdfjsLib === 'undefined') missing.push('PDF.js');
+            if (typeof nlp === 'undefined') missing.push('Compromise');
+            
+            if (missing.length > 0) {
+                console.warn('以下库未能加载:', missing.join(', '));
+                // 某些功能可能受限，但不阻止应用运行
+            }
+            return missing;
+        };
+        
+        // 延迟检查库加载（给CDN一些时间）
+        setTimeout(checkLibraries, 2000);
+        
         // ==================== 常量定义 ====================
         const CONFIG = {
             // 数据库配置
@@ -2094,6 +2149,31 @@
                 PDF_WORKER: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
             }
         };
+
+        // ==================== iOS/Safari 兼容性修复 ====================
+        // Polyfill for File.arrayBuffer() - 某些旧版 iOS Safari 不支持
+        if (!File.prototype.arrayBuffer) {
+            File.prototype.arrayBuffer = function() {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => reject(reader.error);
+                    reader.readAsArrayBuffer(this);
+                });
+            };
+        }
+        
+        // Polyfill for Blob.arrayBuffer() - 某些旧版 iOS Safari 不支持
+        if (!Blob.prototype.arrayBuffer) {
+            Blob.prototype.arrayBuffer = function() {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => reject(reader.error);
+                    reader.readAsArrayBuffer(this);
+                });
+            };
+        }
 
         // ==================== 工具函数 ====================
         const Utils = {
@@ -2208,76 +2288,113 @@
                 this.dbName = CONFIG.DB_NAME;
                 this.stores = CONFIG.STORES;
                 this.db = null;
+                this.isAvailable = true; // 标记 IndexedDB 是否可用
             }
 
             async init() {
+                // 检查 IndexedDB 是否可用（iOS Safari 隐私模式下不可用）
+                if (typeof indexedDB === 'undefined') {
+                    console.warn('IndexedDB 不可用，将使用降级模式');
+                    this.isAvailable = false;
+                    return;
+                }
+                
                 return new Promise((resolve, reject) => {
-                    const request = indexedDB.open(this.dbName, CONFIG.DB_VERSION);
-                    
-                    request.onerror = () => reject(request.error);
-                    request.onsuccess = () => {
-                        this.db = request.result;
-                        resolve();
-                    };
-                    
-                    request.onupgradeneeded = (e) => {
-                        const db = e.target.result;
-                        const { BOOKS, PROGRESS, KNOWN_WORDS, OFFLINE_DICT, LOOKED_UP_WORDS } = this.stores;
+                    try {
+                        const request = indexedDB.open(this.dbName, CONFIG.DB_VERSION);
                         
-                        // 书籍存储
-                        if (!db.objectStoreNames.contains(BOOKS)) {
-                            const bookStore = db.createObjectStore(BOOKS, { keyPath: 'id' });
-                            bookStore.createIndex('lastOpenedAt', 'lastOpenedAt', { unique: false });
-                        }
+                        request.onerror = (e) => {
+                            console.warn('IndexedDB 打开失败:', e.target.error);
+                            this.isAvailable = false;
+                            resolve(); // 不reject，允许应用继续运行
+                        };
                         
-                        // 阅读进度存储
-                        if (!db.objectStoreNames.contains(PROGRESS)) {
-                            db.createObjectStore(PROGRESS, { keyPath: 'bookId' });
-                        }
+                        request.onsuccess = () => {
+                            this.db = request.result;
+                            this.isAvailable = true;
+                            resolve();
+                        };
                         
-                        // 已知词汇存储（跨书本）
-                        if (!db.objectStoreNames.contains(KNOWN_WORDS)) {
-                            const knownWordsStore = db.createObjectStore(KNOWN_WORDS, { keyPath: 'lemma' });
-                            knownWordsStore.createIndex('addedAt', 'addedAt', { unique: false });
-                        }
-                        
-                        // 离线词典存储
-                        if (!db.objectStoreNames.contains(OFFLINE_DICT)) {
-                            db.createObjectStore(OFFLINE_DICT, { keyPath: 'id' });
-                        }
-                        
-                        // 已查询词汇存储（记录悬停查看过的词汇）
-                        if (!db.objectStoreNames.contains(LOOKED_UP_WORDS)) {
-                            const lookedUpStore = db.createObjectStore(LOOKED_UP_WORDS, { keyPath: 'word' });
-                            lookedUpStore.createIndex('lookedUpAt', 'lookedUpAt', { unique: false });
-                        }
-                    };
+                        request.onupgradeneeded = (e) => {
+                            const db = e.target.result;
+                            const { BOOKS, PROGRESS, KNOWN_WORDS, OFFLINE_DICT, LOOKED_UP_WORDS } = this.stores;
+                            
+                            // 书籍存储
+                            if (!db.objectStoreNames.contains(BOOKS)) {
+                                const bookStore = db.createObjectStore(BOOKS, { keyPath: 'id' });
+                                bookStore.createIndex('lastOpenedAt', 'lastOpenedAt', { unique: false });
+                            }
+                            
+                            // 阅读进度存储
+                            if (!db.objectStoreNames.contains(PROGRESS)) {
+                                db.createObjectStore(PROGRESS, { keyPath: 'bookId' });
+                            }
+                            
+                            // 已知词汇存储（跨书本）
+                            if (!db.objectStoreNames.contains(KNOWN_WORDS)) {
+                                const knownWordsStore = db.createObjectStore(KNOWN_WORDS, { keyPath: 'lemma' });
+                                knownWordsStore.createIndex('addedAt', 'addedAt', { unique: false });
+                            }
+                            
+                            // 离线词典存储
+                            if (!db.objectStoreNames.contains(OFFLINE_DICT)) {
+                                db.createObjectStore(OFFLINE_DICT, { keyPath: 'id' });
+                            }
+                            
+                            // 已查询词汇存储（记录悬停查看过的词汇）
+                            if (!db.objectStoreNames.contains(LOOKED_UP_WORDS)) {
+                                const lookedUpStore = db.createObjectStore(LOOKED_UP_WORDS, { keyPath: 'word' });
+                                lookedUpStore.createIndex('lookedUpAt', 'lookedUpAt', { unique: false });
+                            }
+                        };
+                    } catch (e) {
+                        console.warn('IndexedDB 初始化异常:', e);
+                        this.isAvailable = false;
+                        resolve(); // 允许应用继续运行
+                    }
                 });
+            }
+            
+            // 检查是否可用
+            _checkAvailable() {
+                if (!this.isAvailable || !this.db) {
+                    return false;
+                }
+                return true;
             }
             
             // 通用存储操作 - 简化重复代码
             _getStore(storeName, mode = 'readonly') {
+                if (!this._checkAvailable()) return null;
                 const transaction = this.db.transaction([storeName], mode);
                 return transaction.objectStore(storeName);
             }
             
             async _simpleGet(storeName, key) {
+                if (!this._checkAvailable()) return null;
                 const store = this._getStore(storeName);
+                if (!store) return null;
                 return Utils.promisifyRequest(store.get(key));
             }
             
             async _simplePut(storeName, data) {
+                if (!this._checkAvailable()) return null;
                 const store = this._getStore(storeName, 'readwrite');
+                if (!store) return null;
                 return Utils.promisifyRequest(store.put(data));
             }
             
             async _simpleDelete(storeName, key) {
+                if (!this._checkAvailable()) return null;
                 const store = this._getStore(storeName, 'readwrite');
+                if (!store) return null;
                 return Utils.promisifyRequest(store.delete(key));
             }
             
             async _simpleGetAll(storeName) {
+                if (!this._checkAvailable()) return [];
                 const store = this._getStore(storeName);
+                if (!store) return [];
                 return Utils.promisifyRequest(store.getAll());
             }
 
@@ -2515,13 +2632,58 @@
             
             // 初始化方法 - 分离构造函数逻辑
             _init() {
-                this.loadSettings();
-                this.loadAnnotationSettings();
-                this.initEventListeners();
-                this.initSettingsListeners();
-                this.initVisibilityTracking();
-                this.applySettings();
-                this.initStorage();
+                console.log('开始初始化阅读器...');
+                
+                try {
+                    this.loadSettings();
+                    console.log('设置加载完成');
+                } catch (e) {
+                    console.error('加载设置失败:', e);
+                }
+                
+                try {
+                    this.loadAnnotationSettings();
+                    console.log('标注设置加载完成');
+                } catch (e) {
+                    console.error('加载标注设置失败:', e);
+                }
+                
+                try {
+                    this.initEventListeners();
+                    console.log('事件监听器初始化完成');
+                } catch (e) {
+                    console.error('初始化事件监听器失败:', e);
+                }
+                
+                try {
+                    this.initSettingsListeners();
+                    console.log('设置监听器初始化完成');
+                } catch (e) {
+                    console.error('初始化设置监听器失败:', e);
+                }
+                
+                try {
+                    this.initVisibilityTracking();
+                    console.log('可见性跟踪初始化完成');
+                } catch (e) {
+                    console.error('初始化可见性跟踪失败:', e);
+                }
+                
+                try {
+                    this.applySettings();
+                    console.log('设置应用完成');
+                } catch (e) {
+                    console.error('应用设置失败:', e);
+                }
+                
+                try {
+                    this.initStorage();
+                    console.log('存储初始化开始');
+                } catch (e) {
+                    console.error('初始化存储失败:', e);
+                }
+                
+                console.log('阅读器初始化完成');
             }
 
             // 初始化页面可见性跟踪
@@ -3738,24 +3900,39 @@
 
             // 初始化设置面板事件
             initSettingsListeners() {
-                const settingsBtn = document.getElementById('settings-btn');
-                const settingsPanel = document.getElementById('settings-panel');
-                const settingsOverlay = document.getElementById('settings-overlay');
+                // 辅助函数：同时绑定 click 和 touchend 事件
+                const addClickHandler = (element, handler) => {
+                    if (!element) return;
+                    element.addEventListener('click', handler);
+                    element.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        handler(e);
+                    });
+                };
+                
+                try {
+                    const settingsBtn = document.getElementById('settings-btn');
+                    const settingsPanel = document.getElementById('settings-panel');
+                    const settingsOverlay = document.getElementById('settings-overlay');
 
-                // 打开/关闭设置面板
-                settingsBtn.addEventListener('click', () => {
-                    settingsPanel.classList.toggle('active');
-                    settingsOverlay.classList.toggle('active');
-                    // 更新词典状态显示
-                    if (settingsPanel.classList.contains('active')) {
-                        this.updateDictStatus();
-                    }
-                });
+                    // 打开/关闭设置面板
+                    addClickHandler(settingsBtn, () => {
+                        console.log('设置按钮点击');
+                        settingsPanel.classList.toggle('active');
+                        settingsOverlay.classList.toggle('active');
+                        // 更新词典状态显示
+                        if (settingsPanel.classList.contains('active')) {
+                            this.updateDictStatus();
+                        }
+                    });
 
-                settingsOverlay.addEventListener('click', () => {
-                    settingsPanel.classList.remove('active');
-                    settingsOverlay.classList.remove('active');
-                });
+                    addClickHandler(settingsOverlay, () => {
+                        settingsPanel.classList.remove('active');
+                        settingsOverlay.classList.remove('active');
+                    });
+                } catch (e) {
+                    console.error('初始化设置按钮失败:', e);
+                }
 
                 // 字体选择
                 document.getElementById('font-family').addEventListener('change', (e) => {
@@ -3873,115 +4050,158 @@
             }
 
             initEventListeners() {
-                // 文件上传
-                document.getElementById('file-input').addEventListener('change', (e) => {
-                    if (e.target.files.length > 0) {
-                        this.loadFile(e.target.files[0]);
-                    }
-                });
-
-                // 侧边栏切换
-                const sidebar = document.getElementById('sidebar');
-                const sidebarOverlay = document.getElementById('sidebar-overlay');
-                
-                const isMobile = () => window.innerWidth <= 768;
-                
-                const toggleSidebar = () => {
-                    if (isMobile()) {
-                        // 移动端：使用 expanded 类控制显示
-                        const isExpanded = sidebar.classList.toggle('expanded');
-                        sidebarOverlay.classList.toggle('active', isExpanded);
-                    } else {
-                        // 桌面端：使用 collapsed 类控制隐藏
-                        sidebar.classList.toggle('collapsed');
-                    }
-                };
-                
-                const closeSidebar = () => {
-                    if (isMobile()) {
-                        sidebar.classList.remove('expanded');
-                    } else {
-                        sidebar.classList.add('collapsed');
-                    }
-                    sidebarOverlay.classList.remove('active');
-                };
-                
-                document.getElementById('toggle-sidebar').addEventListener('click', toggleSidebar);
-                
-                // 点击遮罩关闭侧边栏
-                sidebarOverlay.addEventListener('click', closeSidebar);
-                
-                // 窗口大小变化时处理状态
-                window.addEventListener('resize', () => {
-                    if (!isMobile()) {
-                        // 切换到桌面端时，移除移动端相关类
-                        sidebar.classList.remove('expanded');
-                        sidebarOverlay.classList.remove('active');
-                    }
-                });
-
-                // 拖放支持
-                const dropZone = document.getElementById('drop-zone');
-                const container = document.getElementById('reader-container');
-
-                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                    container.addEventListener(eventName, (e) => {
+                // 辅助函数：同时绑定 click 和 touchend 事件（移动端兼容）
+                const addClickHandler = (element, handler) => {
+                    if (!element) return;
+                    element.addEventListener('click', handler);
+                    // 对于某些 iOS 设备，需要同时绑定 touchend
+                    element.addEventListener('touchend', (e) => {
+                        // 防止同时触发 click 和 touchend
                         e.preventDefault();
-                        e.stopPropagation();
+                        handler(e);
                     });
-                });
-
-                container.addEventListener('dragenter', () => dropZone.classList.add('drag-over'));
-                container.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-                container.addEventListener('drop', (e) => {
-                    dropZone.classList.remove('drag-over');
-                    const files = e.dataTransfer.files;
-                    if (files.length > 0) {
-                        const fileName = files[0].name.toLowerCase();
-                        if (fileName.endsWith('.epub') || fileName.endsWith('.pdf')) {
-                            this.loadFile(files[0]);
+                };
+                
+                try {
+                    // 文件上传
+                    document.getElementById('file-input').addEventListener('change', (e) => {
+                        console.log('文件选择事件触发');
+                        if (e.target.files.length > 0) {
+                            this.loadFile(e.target.files[0]);
                         }
-                    }
-                });
-
-                // 滚动时更新目录高亮和进度 - 使用节流和防抖优化性能
-                const throttledUpdate = Utils.throttle(() => {
-                    this.updateActiveTocItem();
-                    this.updateProgress();
-                }, 100);
-                
-                const debouncedSave = Utils.debounce(() => {
-                    this.saveReadingProgress();
-                }, CONFIG.INTERVALS.SAVE_DEBOUNCE);
-                
-                document.getElementById('reader-container').addEventListener('scroll', () => {
-                    throttledUpdate();
-                    debouncedSave();
-                }, { passive: true });
-
-                // 书架按钮
-                document.getElementById('library-btn').addEventListener('click', () => {
-                    this.showLibrary();
-                });
-
-                // 词汇表按钮
-                document.getElementById('vocab-btn').addEventListener('click', () => {
-                    this.showVocabularyModal();
-                });
-
-                // 已查询词表按钮
-                const lookedUpBtn = document.getElementById('looked-up-btn');
-                if (lookedUpBtn) {
-                    lookedUpBtn.addEventListener('click', () => {
-                        this.showLookedUpWordsModal();
                     });
+                } catch (e) {
+                    console.error('绑定文件上传事件失败:', e);
                 }
 
-                // 选词浮动按钮
-                this.initWordSelection();
+                try {
+                    // 侧边栏切换
+                    const sidebar = document.getElementById('sidebar');
+                    const sidebarOverlay = document.getElementById('sidebar-overlay');
+                    
+                    const isMobile = () => window.innerWidth <= 768;
+                    
+                    const toggleSidebar = () => {
+                        console.log('切换侧边栏');
+                        if (isMobile()) {
+                            // 移动端：使用 expanded 类控制显示
+                            const isExpanded = sidebar.classList.toggle('expanded');
+                            sidebarOverlay.classList.toggle('active', isExpanded);
+                        } else {
+                            // 桌面端：使用 collapsed 类控制隐藏
+                            sidebar.classList.toggle('collapsed');
+                        }
+                    };
+                    
+                    const closeSidebar = () => {
+                        if (isMobile()) {
+                            sidebar.classList.remove('expanded');
+                        } else {
+                            sidebar.classList.add('collapsed');
+                        }
+                        sidebarOverlay.classList.remove('active');
+                    };
+                    
+                    addClickHandler(document.getElementById('toggle-sidebar'), toggleSidebar);
+                    
+                    // 点击遮罩关闭侧边栏
+                    addClickHandler(sidebarOverlay, closeSidebar);
+                    
+                    // 窗口大小变化时处理状态
+                    window.addEventListener('resize', () => {
+                        if (!isMobile()) {
+                            // 切换到桌面端时，移除移动端相关类
+                            sidebar.classList.remove('expanded');
+                            sidebarOverlay.classList.remove('active');
+                        }
+                    });
+                } catch (e) {
+                    console.error('绑定侧边栏事件失败:', e);
+                }
+
+                try {
+                    // 拖放支持（移动端不支持拖放，这里只处理桌面端）
+                    const dropZone = document.getElementById('drop-zone');
+                    const container = document.getElementById('reader-container');
+
+                    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                        container.addEventListener(eventName, (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        });
+                    });
+
+                    container.addEventListener('dragenter', () => dropZone.classList.add('drag-over'));
+                    container.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+                    container.addEventListener('drop', (e) => {
+                        dropZone.classList.remove('drag-over');
+                        const files = e.dataTransfer.files;
+                        if (files.length > 0) {
+                            const fileName = files[0].name.toLowerCase();
+                            if (fileName.endsWith('.epub') || fileName.endsWith('.pdf')) {
+                                this.loadFile(files[0]);
+                            }
+                        }
+                    });
+                } catch (e) {
+                    console.error('绑定拖放事件失败:', e);
+                }
+
+                try {
+                    // 滚动时更新目录高亮和进度 - 使用节流和防抖优化性能
+                    const throttledUpdate = Utils.throttle(() => {
+                        this.updateActiveTocItem();
+                        this.updateProgress();
+                    }, 100);
+                    
+                    const debouncedSave = Utils.debounce(() => {
+                        this.saveReadingProgress();
+                    }, CONFIG.INTERVALS.SAVE_DEBOUNCE);
+                    
+                    document.getElementById('reader-container').addEventListener('scroll', () => {
+                        throttledUpdate();
+                        debouncedSave();
+                    }, { passive: true });
+                } catch (e) {
+                    console.error('绑定滚动事件失败:', e);
+                }
+
+                try {
+                    // 书架按钮
+                    addClickHandler(document.getElementById('library-btn'), () => {
+                        console.log('书架按钮点击');
+                        this.showLibrary();
+                    });
+
+                    // 词汇表按钮
+                    addClickHandler(document.getElementById('vocab-btn'), () => {
+                        console.log('词汇表按钮点击');
+                        this.showVocabularyModal();
+                    });
+
+                    // 已查询词表按钮
+                    const lookedUpBtn = document.getElementById('looked-up-btn');
+                    if (lookedUpBtn) {
+                        addClickHandler(lookedUpBtn, () => {
+                            console.log('已查询词表按钮点击');
+                            this.showLookedUpWordsModal();
+                        });
+                    }
+                } catch (e) {
+                    console.error('绑定工具栏按钮事件失败:', e);
+                }
+
+                try {
+                    // 选词浮动按钮
+                    this.initWordSelection();
+                    
+                    // 初始化词汇悬停记录
+                    this.initWordHoverTracking();
+                } catch (e) {
+                    console.error('初始化选词功能失败:', e);
+                }
                 
-                // 初始化词汇悬停记录
-                this.initWordHoverTracking();
+                console.log('事件监听器初始化完成');
             }
 
             // 初始化选词功能
@@ -3989,29 +4209,42 @@
                 const wordActionBtn = document.getElementById('word-action-btn');
                 const readerContainer = document.getElementById('reader-container');
 
-                // 监听鼠标抬起事件（文本选择结束）
-                readerContainer.addEventListener('mouseup', (e) => {
+                // 处理文本选择的函数
+                const handleSelection = (e) => {
                     // 延迟处理，确保选区已经建立
                     setTimeout(() => {
                         this.handleTextSelection(e);
                     }, 10);
-                });
+                };
 
-                // 监听点击事件隐藏按钮
-                document.addEventListener('mousedown', (e) => {
+                // 监听鼠标抬起事件（桌面端）
+                readerContainer.addEventListener('mouseup', handleSelection);
+                
+                // 监听触摸结束事件（移动端）
+                readerContainer.addEventListener('touchend', handleSelection, { passive: true });
+
+                // 隐藏按钮的函数
+                const hideBtn = (e) => {
                     if (e.target !== wordActionBtn) {
                         this.hideWordActionBtn();
                     }
-                });
+                };
 
-                // 点击浮动按钮
-                wordActionBtn.addEventListener('click', async (e) => {
+                // 监听点击/触摸事件隐藏按钮
+                document.addEventListener('mousedown', hideBtn);
+                document.addEventListener('touchstart', hideBtn, { passive: true });
+
+                // 点击浮动按钮（同时支持 click 和 touchend）
+                const handleWordAction = async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     if (this.selectedWordInfo) {
                         await this.toggleKnownWord(this.selectedWordInfo.lemma);
                     }
-                });
+                };
+                
+                wordActionBtn.addEventListener('click', handleWordAction);
+                wordActionBtn.addEventListener('touchend', handleWordAction);
             }
 
             // 初始化词汇悬停追踪
@@ -4503,13 +4736,32 @@
 
             // 根据文件类型加载文件
             async loadFile(file) {
+                console.log('开始加载文件:', file.name, '大小:', file.size);
+                
                 const fileName = file.name.toLowerCase();
-                if (fileName.endsWith('.pdf')) {
-                    await this.loadPDF(file);
-                } else if (fileName.endsWith('.epub')) {
-                    await this.loadEPUB(file);
-                } else {
-                    alert('不支持的文件格式，请上传 EPUB 或 PDF 文件。');
+                
+                try {
+                    if (fileName.endsWith('.pdf')) {
+                        // 检查 PDF.js 是否可用
+                        if (typeof pdfjsLib === 'undefined') {
+                            alert('PDF.js 库未能加载，请检查网络连接后刷新页面重试。');
+                            return;
+                        }
+                        await this.loadPDF(file);
+                    } else if (fileName.endsWith('.epub')) {
+                        // 检查 JSZip 是否可用
+                        if (typeof JSZip === 'undefined') {
+                            alert('JSZip 库未能加载，请检查网络连接后刷新页面重试。');
+                            return;
+                        }
+                        await this.loadEPUB(file);
+                    } else {
+                        alert('不支持的文件格式，请上传 EPUB 或 PDF 文件。');
+                    }
+                } catch (error) {
+                    console.error('加载文件失败:', error);
+                    this.showLoading(false);
+                    alert('加载文件失败: ' + (error.message || '未知错误'));
                 }
             }
 
