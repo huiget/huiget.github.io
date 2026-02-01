@@ -57,6 +57,11 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            max-width: 100vw;
+            overflow-x: hidden;
+        }
+
         body {
             font-family: var(--font-system);
             background: var(--bg-light);
@@ -67,6 +72,8 @@
         .container {
             display: flex;
             height: 100vh;
+            max-width: 100vw;
+            overflow-x: hidden;
         }
 
         /* 通用按钮样式 */
@@ -232,6 +239,8 @@
             flex-direction: column;
             overflow: hidden;
             position: relative;
+            min-width: 0;
+            max-width: 100%;
         }
 
         /* 顶部工具栏 */
@@ -1164,12 +1173,15 @@
         .reader-container {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
             padding: 40px;
             background: #f9f9f9;
+            max-width: 100%;
         }
 
         .reader-content {
             max-width: 800px;
+            width: 100%;
             margin: 0 auto;
             background: white;
             padding: 60px 80px;
