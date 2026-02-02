@@ -4265,10 +4265,6 @@
                     const readerContainer = document.getElementById('reader-container');
                     if (!readerContainer) return;
                     
-                    // 记录已处理的词汇和时间戳，避免短时间内重复记录
-                    const recentlyRecorded = new Map();
-                    const RECORD_COOLDOWN = 5000; // 5秒冷却时间
-                    
                     // 使用 mouseover 事件委托监听悬停
                     readerContainer.addEventListener('mouseover', (e) => {
                         try {
@@ -4281,12 +4277,6 @@
                             const word = annotationWord.textContent.replace(tooltip.textContent, '').trim().toLowerCase();
                             if (!word) return;
                             
-                            // 检查冷却时间
-                            const lastRecorded = recentlyRecorded.get(word);
-                            const now = Date.now();
-                            if (lastRecorded && (now - lastRecorded) < RECORD_COOLDOWN) return;
-                            
-                            recentlyRecorded.set(word, now);
                             this.recordLookedUpWord(annotationWord);
                         } catch (e) {
                             // 忽略悬停追踪错误
