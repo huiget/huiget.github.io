@@ -13,6 +13,14 @@
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         }
     </script>
+    <!-- WebLLM for local AI translation -->
+    <script type="module">
+        import { CreateMLCEngine, prebuiltAppConfig } from 'https://esm.run/@mlc-ai/web-llm';
+        window.CreateMLCEngine = CreateMLCEngine;
+        window.webLLMPrebuiltAppConfig = prebuiltAppConfig;
+        // 触发 WebLLM 加载完成事件
+        window.dispatchEvent(new Event('webllm-ready'));
+    </script>
     <style>
         /* CSS 变量 - 统一管理颜色和尺寸 */
         :root {
@@ -2055,6 +2063,31 @@
                     </div>
                     <div style="font-size: 11px; color: #95a5a6; margin-top: 6px;">开启后优先使用离线词典翻译，查不到时再用 Google 翻译</div>
                 </div>
+                
+                <div class="setting-group" style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
+                    <label class="setting-label">AI 上下文翻译 (Qwen3-4B)</label>
+                    <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 8px;">
+                        根据句子上下文，将单词翻译为最合适的中文释义
+                    </div>
+                    <div id="llm-status" style="font-size: 11px; color: #95a5a6; margin-top: 6px;">模型未加载</div>
+                    <div id="llm-progress" style="display: none; margin-top: 8px;">
+                        <div style="background: #ecf0f1; border-radius: 4px; height: 6px; overflow: hidden;">
+                            <div id="llm-progress-bar" style="background: #9b59b6; height: 100%; width: 0%; transition: width 0.3s;"></div>
+                        </div>
+                        <div id="llm-progress-text" style="font-size: 10px; color: #7f8c8d; margin-top: 4px;">下载中...</div>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                        <button id="load-llm-btn" style="padding: 6px 12px; background: #9b59b6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">加载模型</button>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-top: 12px;">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="llm-enabled" disabled>
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span style="font-size: 13px; color: #34495e;">启用 AI 上下文翻译</span>
+                    </div>
+                    <div style="font-size: 11px; color: #95a5a6; margin-top: 6px;">需要 WebGPU 支持（Chrome 113+）。已缓存的模型会在打开阅读器时自动加载</div>
+                </div>
             </div>
 
             <div class="reader-container" id="reader-container">
@@ -2638,6 +2671,12 @@
                 this.offlineDictLoaded = false;
                 this.offlineDictPriority = false;
                 
+                // LLM 上下文翻译状态
+                this.llmEngine = null;
+                this.llmLoading = false;
+                this.llmEnabled = false;
+                this.llmModelId = 'Qwen3-4B-q4f16_1-MLC';
+                
                 // 初始化
                 this._init();
             }
@@ -2672,6 +2711,13 @@
                     console.log('设置监听器初始化完成');
                 } catch (e) {
                     console.error('初始化设置监听器失败:', e);
+                }
+                
+                try {
+                    this.loadLLMSettings();
+                    console.log('LLM 设置加载完成');
+                } catch (e) {
+                    console.error('加载 LLM 设置失败:', e);
                 }
                 
                 try {
@@ -2888,6 +2934,355 @@
                 const translation = this.offlineDict.get(word.toLowerCase());
                 // 将字面的 \n 转换为真正的换行符
                 return translation ? translation.replace(/\\n/g, '\n') : null;
+            }
+
+            // ==================== LLM 上下文翻译相关方法 ====================
+            
+            // 检查浏览器是否支持 WebGPU
+            async checkWebGPUSupport() {
+                if (!navigator.gpu) {
+                    return { supported: false, reason: '浏览器不支持 WebGPU' };
+                }
+                try {
+                    const adapter = await navigator.gpu.requestAdapter();
+                    if (!adapter) {
+                        return { supported: false, reason: '无法获取 GPU 适配器' };
+                    }
+                    return { supported: true };
+                } catch (e) {
+                    return { supported: false, reason: e.message };
+                }
+            }
+            
+            // 检查模型是否已缓存
+            async checkModelCached() {
+                try {
+                    // WebLLM 使用 Cache API 存储模型
+                    const cache = await caches.open('webllm/model');
+                    const keys = await cache.keys();
+                    // 精确匹配当前使用的 model id
+                    const hasModel = keys.some(req => req.url.includes(this.llmModelId));
+                    return hasModel;
+                } catch (e) {
+                    console.warn('检查模型缓存失败:', e);
+                    return false;
+                }
+            }
+            
+            // 更新 LLM 状态显示
+            updateLLMStatus(message, isError = false) {
+                const statusEl = document.getElementById('llm-status');
+                if (statusEl) {
+                    statusEl.textContent = message;
+                    statusEl.style.color = isError ? '#e74c3c' : '#27ae60';
+                }
+            }
+            
+            // 更新 LLM 加载进度
+            updateLLMProgress(progress) {
+                const progressContainer = document.getElementById('llm-progress');
+                const progressBar = document.getElementById('llm-progress-bar');
+                const progressText = document.getElementById('llm-progress-text');
+                
+                if (progressContainer && progressBar && progressText) {
+                    progressContainer.style.display = 'block';
+                    
+                    // progress 对象包含 text 和 progress 属性
+                    const percent = Math.round((progress.progress || 0) * 100);
+                    progressBar.style.width = `${percent}%`;
+                    progressText.textContent = progress.text || `加载中... ${percent}%`;
+                }
+            }
+            
+            // 隐藏进度条
+            hideLLMProgress() {
+                const progressContainer = document.getElementById('llm-progress');
+                if (progressContainer) {
+                    progressContainer.style.display = 'none';
+                }
+            }
+            
+            // 显示确认对话框
+            showConfirmDialog({ title, message, confirmText = '确定', cancelText = '取消' }) {
+                return new Promise((resolve) => {
+                    // 创建模态框
+                    const overlay = document.createElement('div');
+                    overlay.style.cssText = `
+                        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                        background: rgba(0,0,0,0.5); z-index: 10000;
+                        display: flex; align-items: center; justify-content: center;
+                    `;
+                    
+                    const dialog = document.createElement('div');
+                    dialog.style.cssText = `
+                        background: white; border-radius: 12px; padding: 24px;
+                        max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                    `;
+                    
+                    dialog.innerHTML = `
+                        <h3 style="margin: 0 0 16px 0; color: #2c3e50; font-size: 18px;">${title}</h3>
+                        <p style="margin: 0 0 24px 0; color: #7f8c8d; font-size: 14px; line-height: 1.6; white-space: pre-line;">${message}</p>
+                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                            <button id="dialog-cancel" style="padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; font-size: 14px;">${cancelText}</button>
+                            <button id="dialog-confirm" style="padding: 10px 20px; border: none; background: #9b59b6; color: white; border-radius: 6px; cursor: pointer; font-size: 14px;">${confirmText}</button>
+                        </div>
+                    `;
+                    
+                    overlay.appendChild(dialog);
+                    document.body.appendChild(overlay);
+                    
+                    const cleanup = (result) => {
+                        document.body.removeChild(overlay);
+                        resolve(result);
+                    };
+                    
+                    dialog.querySelector('#dialog-confirm').onclick = () => cleanup(true);
+                    dialog.querySelector('#dialog-cancel').onclick = () => cleanup(false);
+                    overlay.onclick = (e) => { if (e.target === overlay) cleanup(false); };
+                });
+            }
+            
+            // 提示下载模型
+            async promptModelDownload() {
+                // 先检查 WebGPU 支持
+                const gpuCheck = await this.checkWebGPUSupport();
+                if (!gpuCheck.supported) {
+                    this.updateLLMStatus(`不支持: ${gpuCheck.reason}`, true);
+                    alert(`您的浏览器不支持 WebGPU：${gpuCheck.reason}\n\n请使用 Chrome 113+ 或其他支持 WebGPU 的浏览器。`);
+                    return false;
+                }
+                
+                // 检查是否已缓存
+                const isCached = await this.checkModelCached();
+                
+                if (isCached) {
+                    // 已缓存，直接加载
+                    return await this.initLLM();
+                }
+                
+                // 未缓存，弹窗确认
+                const confirmed = await this.showConfirmDialog({
+                    title: '下载 AI 上下文翻译模型',
+                    message: '首次使用需要下载 Qwen3-4B 模型文件（约 2.5 GB）。\n\n下载后将缓存在浏览器中，后续使用无需重复下载。\n\n该模型用于根据句子上下文将单词翻译为最合适的中文释义。\n\n是否立即下载？',
+                    confirmText: '开始下载',
+                    cancelText: '取消'
+                });
+                
+                if (confirmed) {
+                    return await this.initLLM();
+                }
+                return false;
+            }
+            
+            // 初始化 LLM 引擎
+            async initLLM() {
+                if (this.llmLoading) {
+                    console.log('LLM 正在加载中...');
+                    return false;
+                }
+                
+                if (this.llmEngine) {
+                    console.log('LLM 已加载');
+                    return true;
+                }
+                
+                // 检查 WebLLM 是否可用
+                if (typeof window.CreateMLCEngine === 'undefined') {
+                    this.updateLLMStatus('WebLLM 库未加载', true);
+                    console.error('WebLLM 库未加载，请检查网络连接');
+                    return false;
+                }
+                
+                this.llmLoading = true;
+                this.updateLLMStatus('正在加载模型...');
+                
+                // 禁用加载按钮
+                const loadBtn = document.getElementById('load-llm-btn');
+                if (loadBtn) {
+                    loadBtn.disabled = true;
+                    loadBtn.textContent = '加载中...';
+                }
+                
+                try {
+                    // 创建引擎，显示进度
+                    this.llmEngine = await window.CreateMLCEngine(this.llmModelId, {
+                        initProgressCallback: (progress) => {
+                            this.updateLLMProgress(progress);
+                            console.log('LLM 加载进度:', progress.text);
+                        }
+                    });
+                    
+                    this.llmLoading = false;
+                    this.hideLLMProgress();
+                    this.updateLLMStatus('模型已就绪');
+                    
+                    // 启用开关
+                    const enabledCheckbox = document.getElementById('llm-enabled');
+                    if (enabledCheckbox) {
+                        enabledCheckbox.disabled = false;
+                        enabledCheckbox.checked = true;
+                        this.llmEnabled = true;
+                        this.saveLLMSettings();
+                    }
+                    
+                    // 更新按钮状态
+                    if (loadBtn) {
+                        loadBtn.textContent = '已加载';
+                        loadBtn.style.background = '#27ae60';
+                    }
+                    
+                    console.log('LLM 引擎加载成功');
+                    return true;
+                } catch (e) {
+                    this.llmLoading = false;
+                    this.llmEngine = null;
+                    this.hideLLMProgress();
+                    this.updateLLMStatus(`加载失败: ${e.message}`, true);
+                    
+                    // 恢复按钮
+                    if (loadBtn) {
+                        loadBtn.disabled = false;
+                        loadBtn.textContent = '重试加载';
+                        loadBtn.style.background = '#e74c3c';
+                    }
+                    
+                    console.error('LLM 引擎加载失败:', e);
+                    return false;
+                }
+            }
+            
+            // 从文本中提取包含指定单词的句子
+            extractSentenceWithWord(text, word) {
+                if (!text || !word) return text;
+                
+                // 按句子分割（支持 . ! ? 以及省略号等）
+                // 使用正则匹配句子边界，保留分隔符
+                const sentences = text.split(/(?<=[.!?])\s+/);
+                
+                // 查找包含该单词的句子
+                const wordRegex = new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+                for (const sentence of sentences) {
+                    if (wordRegex.test(sentence)) {
+                        return sentence.trim();
+                    }
+                }
+                
+                // 如果没找到，返回原文本（可能单词在句子边界被分割了）
+                return text;
+            }
+            
+            // 使用 LLM 根据句子上下文直接翻译单词
+            async translateWithLLM(word, lemma = null, sentenceContext = null) {
+                if (!this.llmEngine) return null;
+                
+                // 如果没有上下文，返回 null，回退到其他翻译方式
+                if (!sentenceContext || sentenceContext.trim().length === 0) {
+                    console.log(`[LLM] 无上下文，跳过 LLM 翻译: ${word}`);
+                    return null;
+                }
+                
+                try {
+                    const contextSentence = sentenceContext.trim();
+                    
+                    // Few-Shot prompt for Qwen3，使用 /no_think 禁用思考模式以获得快速直接的回复
+                    const userPrompt = `/no_think
+Task: Translate the target English word into Chinese based on the sentence context. Only output the Chinese translation, nothing else.
+
+Sentence: "He runs a software company."
+Target Word: "runs"
+Translation: 经营
+
+Sentence: "The river runs through the city."
+Target Word: "runs"
+Translation: 流经
+
+Sentence: "I need to bank the money before noon."
+Target Word: "bank"
+Translation: 存入银行
+
+Sentence: "The bank of the river was covered with flowers."
+Target Word: "bank"
+Translation: 河岸
+
+Sentence: "${contextSentence}"
+Target Word: "${word}"
+Translation:`;
+                    
+                    const response = await this.llmEngine.chat.completions.create({
+                        messages: [
+                            { role: 'user', content: userPrompt }
+                        ],
+                        temperature: 0.1,
+                        max_tokens: 30
+                    });
+                    
+                    const rawResult = response.choices[0]?.message?.content?.trim();
+                    // log rawResult
+                    console.log('rawResult', rawResult);
+                    if (rawResult) {
+                        // 清理结果：移除 Qwen3 的 <think>...</think> 标签、引号、多余空白等
+                        const cleanedResult = rawResult
+                            .replace(/<think>[\s\S]*?<\/think>/g, '')  // 移除思考标签
+                            .replace(/^["'`]|["'`]$/g, '')  // 移除引号
+                            .trim();
+                        // 只取第一行（防止模型输出多余内容）
+                        const firstLine = cleanedResult.split('\n')[0].trim();
+                        if (firstLine && firstLine.length > 0 && firstLine.length < 50) {
+                            console.log(`[LLM翻译] ${word} -> ${firstLine}\n句子: ${contextSentence}`);
+                            return firstLine;
+                        }
+                        console.log(`[LLM翻译] 结果异常，跳过: ${rawResult}`);
+                    }
+                } catch (e) {
+                    console.warn('LLM 上下文翻译失败:', e);
+                }
+                
+                // 失败时返回 null，回退到其他翻译方式
+                return null;
+            }
+            
+            // 保存 LLM 设置
+            saveLLMSettings() {
+                localStorage.setItem('epubLLMEnabled', this.llmEnabled ? '1' : '0');
+            }
+            
+            // 加载 LLM 设置
+            loadLLMSettings() {
+                this.llmEnabled = localStorage.getItem('epubLLMEnabled') === '1';
+                
+                const enabledCheckbox = document.getElementById('llm-enabled');
+                if (enabledCheckbox) {
+                    enabledCheckbox.checked = this.llmEnabled;
+                    // 如果模型未加载，禁用开关
+                    enabledCheckbox.disabled = !this.llmEngine;
+                }
+                
+                // 监听 WebLLM 加载完成事件，然后尝试自动加载模型
+                if (typeof window.CreateMLCEngine !== 'undefined') {
+                    // WebLLM 已加载，直接尝试自动加载
+                    this.tryAutoLoadLLM();
+                } else {
+                    // 等待 WebLLM 加载完成
+                    window.addEventListener('webllm-ready', () => {
+                        this.tryAutoLoadLLM();
+                    }, { once: true });
+                }
+            }
+            
+            // 尝试自动加载 LLM 模型（如果已缓存）
+            async tryAutoLoadLLM() {
+                try {
+                    // 检查模型是否已缓存
+                    const isCached = await this.checkModelCached();
+                    if (isCached) {
+                        console.log('检测到已缓存的模型，开始自动加载...');
+                        await this.initLLM();
+                    } else {
+                        console.log('模型未缓存，跳过自动加载');
+                    }
+                } catch (e) {
+                    console.warn('自动加载模型失败:', e);
+                }
             }
 
             // 初始化已知词汇表
@@ -3423,7 +3818,18 @@
 
             // 调用Google翻译API（查询原词），失败时回退到离线词典
             // 如果开启了离线词典优先，则先查离线词典，查不到再用Google翻译
-            async translateWord(word, lemma = null) {
+            // sentenceContext: 句子上下文，用于 LLM 上下文翻译
+            async translateWord(word, lemma = null, sentenceContext = null) {
+                // LLM 上下文翻译优先（如果已启用且模型已加载）
+                if (this.llmEnabled && this.llmEngine) {
+                    const llmResult = await this.translateWithLLM(word, lemma, sentenceContext);
+                    if (llmResult) {
+                        return llmResult;
+                    }
+                    // LLM 翻译失败，回退到其他翻译方式
+                    console.log(`[LLM] 翻译失败，回退到其他方式: ${word}/${lemma}`);
+                }
+                
                 // 离线词典优先模式
                 if (this.offlineDictPriority) {
                     // 先查原词
@@ -3492,8 +3898,9 @@
 
             // 获取翻译
             // word: 原词, lemma: 词根形式（可选，用于离线词典备选查询）
-            async getTranslation(word, lemma = null) {
-                return await this.translateWord(word, lemma);
+            // sentenceContext: 句子上下文（可选，用于 LLM 上下文翻译）
+            async getTranslation(word, lemma = null, sentenceContext = null) {
+                return await this.translateWord(word, lemma, sentenceContext);
             }
 
             // 以句子为单位获取所有单词的原形（lemma）和词性
@@ -3794,8 +4201,9 @@
                                 (this.currentParagraphIndex - lastSeenParagraph) <= CONFIG.READING.ANNOTATION_GAP;
                             
                             if (!isRecentlyAnnotated && !annotations.has(lowerWord)) {
-                                // 查询翻译：Google用原词，离线词典先查原词再查lemma
-                                const cn = await this.getTranslation(lowerWord, lemma);
+                                // 查询翻译：提取单词所在的句子作为上下文用于 LLM 上下文翻译
+                                const sentenceContext = this.extractSentenceWithWord(text, word);
+                                const cn = await this.getTranslation(lowerWord, lemma, sentenceContext);
                                 if (cn && cn !== lemma && cn !== lowerWord) {
                                     annotations.set(lowerWord, { cn, rank });
                                     this.annotatedWordsHistory.set(lemma, this.currentParagraphIndex); // 记录词出现的段落索引
@@ -4029,6 +4437,17 @@
                 document.getElementById('offline-dict-priority').addEventListener('change', (e) => {
                     this.offlineDictPriority = e.target.checked;
                     this.saveAnnotationSettings();
+                });
+                
+                // LLM 模型加载按钮
+                document.getElementById('load-llm-btn').addEventListener('click', async () => {
+                    await this.promptModelDownload();
+                });
+                
+                // LLM 上下文翻译开关
+                document.getElementById('llm-enabled').addEventListener('change', (e) => {
+                    this.llmEnabled = e.target.checked;
+                    this.saveLLMSettings();
                 });
             }
             
