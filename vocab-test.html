@@ -415,7 +415,7 @@
                 // Batch sampling parameters (reduces randomness by updating after multiple samples)
                 // Early batches are larger to quickly narrow down the estimate
                 this.initialBatchSize = 8; // First batch size
-                this.minBatchSize = 3; // Minimum batch size for later batches
+                this.minBatchSize = 1; // Minimum batch size for later batches
                 this.batchCount = 0; // Number of batches completed
                 this.pendingResponses = []; // Accumulate responses: [{rank, response}]
                 this.currentBatch = []; // Current batch of words to test
@@ -424,7 +424,12 @@
                 // Stopping criteria
                 this.minWords = 10;
                 this.maxWords = 200;
-                this.targetConfidenceWidth = 0.05; // 5% of estimate
+                this.targetConfidenceWidth = 0.10; // 10% of estimate
+                
+                // Boundary validation state
+                this.boundaryValidationDone = false;
+                this.boundaryValidationInProgress = false;
+                this.boundaryValidationResults = []; // Track results of boundary checks
                 
                 // Error tolerance parameters (accounts for user mistakes)
                 // slip: probability of saying "don't know" when actually knowing
@@ -527,6 +532,11 @@
                 this.currentBatch = [];
                 this.currentBatchIndex = 0;
                 
+                // Reset boundary validation state
+                this.boundaryValidationDone = false;
+                this.boundaryValidationInProgress = false;
+                this.boundaryValidationResults = [];
+                
                 // Show test UI
                 this.elements.loading.style.display = 'none';
                 this.elements.error.style.display = 'none';
@@ -602,11 +612,13 @@
             // Calculate dynamic batch size based on test progress
             getCurrentBatchSize() {
                 // First few batches are larger to quickly narrow down the estimate
-                // Batch 0: 8 words, Batch 1: 6 words, Batch 2: 5 words, then 3 words
+                // Gradually decrease: 8 → 6 → 5 → 4 → 3 → 2 → 2 → 2 → 1...
                 if (this.batchCount === 0) return this.initialBatchSize;
                 if (this.batchCount === 1) return 6;
                 if (this.batchCount === 2) return 5;
                 if (this.batchCount === 3) return 4;
+                if (this.batchCount === 4) return 3;
+                if (this.batchCount <= 7) return 2;
                 return this.minBatchSize;
             }
 
@@ -717,6 +729,7 @@
                 
                 this.currentBatch = selectedBatch;
                 this.currentBatchIndex = 0;
+                
             }
 
             // Show the current word from the batch
@@ -737,7 +750,121 @@
                 const width = estimate.upper - estimate.lower;
                 const relativeWidth = width / Math.max(estimate.mean, 1000);
                 
-                return relativeWidth < this.targetConfidenceWidth;
+                const confidenceReached = relativeWidth < this.targetConfidenceWidth;
+                
+                // If confidence reached but boundary validation not done, trigger it
+                if (confidenceReached && !this.boundaryValidationDone && !this.boundaryValidationInProgress) {
+                    return this.triggerBoundaryValidation();
+                }
+                
+                // If boundary validation is in progress, don't stop yet
+                if (this.boundaryValidationInProgress) {
+                    return false;
+                }
+                
+                return confidenceReached && this.boundaryValidationDone;
+            }
+            
+            // Trigger boundary validation to verify the estimate
+            triggerBoundaryValidation() {
+                const estimate = this.getEstimate();
+                const testedRanks = Array.from(this.testedWords.keys());
+                const minTestedRank = Math.min(...testedRanks);
+                
+                // Check if we've tested words significantly below the estimate
+                // If the lowest tested word is too close to the estimate, we need to validate
+                const validationNeeded = minTestedRank > estimate.lower * 0.7;
+                
+                if (!validationNeeded) {
+                    // Already tested words well below the estimate, no validation needed
+                    this.boundaryValidationDone = true;
+                    return true; // Can stop now
+                }
+                
+                // Need to validate - select boundary validation batch
+                this.boundaryValidationInProgress = true;
+                this.selectBoundaryValidationBatch();
+                return false; // Don't stop yet
+            }
+            
+            // Select words for boundary validation
+            // Test words at different levels below the current estimate
+            selectBoundaryValidationBatch() {
+                const estimate = this.getEstimate();
+                const mean = estimate.mean;
+                const lower = estimate.lower;
+                
+                // Test at multiple levels: 30%, 50%, 70% of the estimated lower bound
+                const validationLevels = [0.3, 0.5, 0.7, 0.85];
+                const validationBatch = [];
+                
+                for (const level of validationLevels) {
+                    const targetRank = Math.round(lower * level);
+                    // Find an untested word near this rank
+                    for (let offset = 0; offset < 500; offset += 10) {
+                        const candidates = [targetRank + offset, targetRank - offset].filter(
+                            r => r > 0 && r <= this.totalWords && !this.testedWords.has(r)
+                        );
+                        if (candidates.length > 0) {
+                            validationBatch.push(candidates[0]);
+                            break;
+                        }
+                    }
+                }
+                
+                // Also add a couple words between lower bound and mean
+                const midLevels = [0.9, 0.95];
+                for (const level of midLevels) {
+                    const targetRank = Math.round(lower + (mean - lower) * level);
+                    for (let offset = 0; offset < 200; offset += 5) {
+                        const candidates = [targetRank + offset, targetRank - offset].filter(
+                            r => r > 0 && r <= this.totalWords && !this.testedWords.has(r)
+                        );
+                        if (candidates.length > 0) {
+                            validationBatch.push(candidates[0]);
+                            break;
+                        }
+                    }
+                }
+                
+                this.currentBatch = validationBatch;
+                this.currentBatchIndex = 0;
+                this.boundaryValidationResults = [];
+            }
+            
+            // Process boundary validation results
+            processBoundaryValidationResults() {
+                const estimate = this.getEstimate();
+                const lower = estimate.lower;
+                
+                // Count how many "should know" words the user actually knows
+                let shouldKnowCount = 0;
+                let actuallyKnowCount = 0;
+                
+                for (const result of this.boundaryValidationResults) {
+                    // Words well below the estimate (< 70% of lower) should be known
+                    if (result.rank < lower * 0.8) {
+                        shouldKnowCount++;
+                        if (result.response === 'know') {
+                            actuallyKnowCount++;
+                        }
+                    }
+                }
+                
+                // If user doesn't know many words they "should" know, the estimate is too high
+                const knowRatio = shouldKnowCount > 0 ? actuallyKnowCount / shouldKnowCount : 1;
+                const estimateNeedsAdjustment = knowRatio < 0.6; // Less than 60% known
+                
+                this.boundaryValidationInProgress = false;
+                this.boundaryValidationDone = true;
+                
+                if (estimateNeedsAdjustment) {
+                    // Continue testing to refine the estimate
+                    this.boundaryValidationDone = false; // Will need to validate again
+                    return false; // Don't stop
+                }
+                
+                return true; // Can stop now
             }
 
             // Process user response: 'know', 'uncertain', or 'unknown'
@@ -747,6 +874,11 @@
                 // Record response
                 this.testedWords.set(this.currentWordRank, response);
                 this.pendingResponses.push({ rank: this.currentWordRank, response });
+                
+                // Track boundary validation results if in progress
+                if (this.boundaryValidationInProgress) {
+                    this.boundaryValidationResults.push({ rank: this.currentWordRank, response });
+                }
                 
                 // Move to next word in batch
                 this.currentBatchIndex++;
@@ -758,14 +890,32 @@
                     this.pendingResponses = [];
                     this.batchCount++;
                     
-                    // Check stopping criteria
-                    if (this.shouldStop()) {
-                        this.completeTest();
-                        return;
+                    // If boundary validation batch just completed, process results
+                    if (this.boundaryValidationInProgress) {
+                        const canStop = this.processBoundaryValidationResults();
+                        if (canStop && this.shouldStop()) {
+                            this.completeTest();
+                            return;
+                        }
+                        // Continue with normal batch selection
+                        this.selectNextBatch();
+                    } else {
+                        // Check stopping criteria (may trigger boundary validation)
+                        const wasValidationInProgress = this.boundaryValidationInProgress;
+                        if (this.shouldStop()) {
+                            this.completeTest();
+                            return;
+                        }
+                        
+                        // If boundary validation was just triggered, don't override the batch
+                        if (this.boundaryValidationInProgress && !wasValidationInProgress) {
+                            // Boundary validation batch was just set by triggerBoundaryValidation
+                            // Don't call selectNextBatch - use the validation batch
+                        } else {
+                            // Select next batch normally
+                            this.selectNextBatch();
+                        }
                     }
-                    
-                    // Select next batch
-                    this.selectNextBatch();
                 }
                 
                 // Show next word
@@ -819,6 +969,7 @@
                 for (let i = 0; i < this.numBins; i++) {
                     this.logPosterior[i] -= logNorm;
                 }
+                
             }
 
             // Update the UI with current state
