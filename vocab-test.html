@@ -609,6 +609,53 @@
                 return { mean, lower, upper };
             }
 
+            // Select first batch with distribution optimized for users with <20k vocabulary
+            // This provides better initial coverage for the expected user population
+            selectFirstBatch() {
+                const batchSize = this.initialBatchSize; // 8 words
+                const selectedBatch = [];
+                
+                // Strategic distribution assuming most users have vocabulary under 20k:
+                // - 2 words from 1-3000 (basic vocabulary, most should know)
+                // - 2 words from 3000-8000 (intermediate, many should know)
+                // - 2 words from 8000-15000 (advanced intermediate)
+                // - 1 word from 15000-25000 (advanced, fewer will know)
+                // - 1 word from 25000-45000 (high level, to detect advanced users)
+                
+                const ranges = [
+                    { min: 500, max: 3000, count: 2 },    // Basic vocabulary
+                    { min: 3000, max: 8000, count: 2 },   // Intermediate
+                    { min: 8000, max: 15000, count: 2 },  // Advanced intermediate
+                    { min: 15000, max: 25000, count: 1 }, // Advanced
+                    { min: 25000, max: 45000, count: 1 }, // High level (for advanced users)
+                ];
+                
+                for (const range of ranges) {
+                    for (let i = 0; i < range.count; i++) {
+                        // Random selection within range
+                        let attempts = 0;
+                        let rank;
+                        do {
+                            rank = Math.floor(Math.random() * (range.max - range.min)) + range.min;
+                            attempts++;
+                        } while (this.testedWords.has(rank) && attempts < 50);
+                        
+                        if (!this.testedWords.has(rank) && rank <= this.totalWords) {
+                            selectedBatch.push(rank);
+                        }
+                    }
+                }
+                
+                // Shuffle the batch for variety in presentation order
+                for (let i = selectedBatch.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [selectedBatch[i], selectedBatch[j]] = [selectedBatch[j], selectedBatch[i]];
+                }
+                
+                this.currentBatch = selectedBatch;
+                this.currentBatchIndex = 0;
+            }
+            
             // Calculate dynamic batch size based on test progress
             getCurrentBatchSize() {
                 // First few batches are larger to quickly narrow down the estimate
@@ -627,6 +674,13 @@
                 const estimate = this.getEstimate();
                 const mean = estimate.mean;
                 const currentBatchSize = this.getCurrentBatchSize();
+                
+                // First batch: use strategic distribution assuming most users have <20k vocabulary
+                // This provides better initial coverage for the expected user population
+                if (this.batchCount === 0) {
+                    this.selectFirstBatch();
+                    return;
+                }
                 
                 // Strategy: collect candidates near the boundary, then randomly select
                 // multiple words for the batch
