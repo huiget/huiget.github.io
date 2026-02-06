@@ -366,7 +366,7 @@
             </div>
 
             <div class="keyboard-hints">
-                按 <kbd>→</kbd> 或 <kbd>Y</kbd> 认识，<kbd>↓</kbd> 或 <kbd>M</kbd> 不确定，<kbd>←</kbd> 或 <kbd>N</kbd> 不认识
+                按 <kbd>←</kbd> 或 <kbd>Y</kbd> 认识，<kbd>↓</kbd> 或 <kbd>M</kbd> 不确定，<kbd>→</kbd> 或 <kbd>N</kbd> 不认识
             </div>
         </div>
 
@@ -490,11 +490,11 @@
                 
                 document.addEventListener('keydown', (e) => {
                     if (this.isComplete) return;
-                    if (e.key === 'ArrowRight' || e.key === 'y' || e.key === 'Y') {
+                    if (e.key === 'ArrowLeft' || e.key === 'y' || e.key === 'Y') {
                         this.respond('know');
                     } else if (e.key === 'ArrowDown' || e.key === 'm' || e.key === 'M') {
                         this.respond('uncertain');
-                    } else if (e.key === 'ArrowLeft' || e.key === 'n' || e.key === 'N') {
+                    } else if (e.key === 'ArrowRight' || e.key === 'n' || e.key === 'N') {
                         this.respond('unknown');
                     }
                 });

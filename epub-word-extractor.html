@@ -751,7 +751,7 @@
                 statusEl.style.color = '#f39c12';
                 
                 try {
-                    const response = await fetch('https://huiget.github.io/filtered_COCA60000.txt');
+                    const response = await fetch('https://huiget.github.io/COCA60000.txt');
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}`);
                     }
@@ -762,7 +762,11 @@
                     for (let i = 0; i < lines.length; i++) {
                         const word = lines[i].trim();
                         if (word) {
-                            this.cocaMap.set(word.toLowerCase(), i + 1);
+                            const lowerWord = word.toLowerCase();
+                            // 重复的单词按照最早出现的为准
+                            if (!this.cocaMap.has(lowerWord)) {
+                                this.cocaMap.set(lowerWord, i + 1);
+                            }
                         }
                     }
                     
