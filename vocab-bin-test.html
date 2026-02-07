@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分频段词汇测试</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 30px 15px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 760px;
+            width: 100%;
+            padding: 35px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 8px;
+            font-size: 1.8em;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 28px;
+            font-size: 0.9em;
+        }
+
+        /* ===== Setup Screen ===== */
+        .setup-form {
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9em;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1em;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: #3a7bd5;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .btn-start {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            margin-top: 10px;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-start:active { transform: translateY(0); }
+
+        /* ===== Loading ===== */
+        .loading { text-align: center; padding: 60px 20px; }
+
+        .spinner {
+            width: 50px; height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #3a7bd5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== Error ===== */
+        .error-content {
+            text-align: center;
+            color: #f45c43;
+            padding: 40px 20px;
+            font-size: 1.1em;
+        }
+
+        /* ===== Test Screen ===== */
+        .test-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 12px 18px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+
+        .test-info .bin-label {
+            color: #00d2ff;
+            font-weight: 600;
+        }
+
+        .test-info .progress-label {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .word-display {
+            text-align: center;
+            padding: 30px 20px 20px;
+        }
+
+        .current-word {
+            font-size: 3em;
+            font-weight: 700;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #fff, #e0e0e0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            word-break: break-all;
+        }
+
+        .word-meta {
+            margin-top: 8px;
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 16px 10px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+
+        .btn-know {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(56, 239, 125, 0.3);
+        }
+        .btn-know:hover { box-shadow: 0 6px 20px rgba(56, 239, 125, 0.4); }
+
+        .btn-uncertain {
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            color: #333;
+            box-shadow: 0 4px 15px rgba(247, 151, 30, 0.3);
+        }
+        .btn-uncertain:hover { box-shadow: 0 6px 20px rgba(247, 151, 30, 0.4); }
+
+        .btn-unknown {
+            background: linear-gradient(135deg, #eb3349, #f45c43);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(235, 51, 73, 0.3);
+        }
+        .btn-unknown:hover { box-shadow: 0 6px 20px rgba(235, 51, 73, 0.4); }
+
+        .keyboard-hints {
+            text-align: center;
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 25px;
+        }
+
+        kbd {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-family: inherit;
+            margin: 0 2px;
+        }
+
+        /* ===== Chart ===== */
+        .chart-section {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+            padding: 18px;
+        }
+
+        .chart-title {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .chart-scroll {
+            max-height: 520px;
+            overflow-y: auto;
+        }
+
+        .chart-row {
+            display: flex;
+            align-items: center;
+            height: 28px;
+            gap: 8px;
+            margin-bottom: 2px;
+            padding: 0 4px;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+
+        .chart-row.active {
+            background: rgba(58, 123, 213, 0.15);
+        }
+
+        .chart-status {
+            width: 18px;
+            font-size: 0.8em;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .chart-label {
+            width: 90px;
+            text-align: right;
+            font-size: 0.78em;
+            color: rgba(255, 255, 255, 0.6);
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .chart-track {
+            flex: 1;
+            height: 18px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-ci {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            border-radius: 3px;
+            transition: left 0.2s, width 0.2s;
+        }
+
+        .chart-mean-line {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 1px;
+            transition: left 0.2s;
+            z-index: 1;
+        }
+
+        .chart-value {
+            width: 100px;
+            text-align: right;
+            font-size: 0.78em;
+            color: rgba(255, 255, 255, 0.7);
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .chart-ci-width {
+            color: rgba(255, 255, 255, 0.4);
+            margin-left: 4px;
+        }
+
+        .chart-ci-width.converged {
+            color: #38ef7d;
+        }
+
+        .chart-scale-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 4px 0;
+            margin-top: 4px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chart-scale-spacer {
+            width: 18px; /* status */
+            flex-shrink: 0;
+        }
+
+        .chart-scale-spacer-label {
+            width: 90px; /* label */
+            flex-shrink: 0;
+        }
+
+        .chart-scale-track {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7em;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .chart-scale-end {
+            width: 100px; /* value */
+            flex-shrink: 0;
+        }
+
+        /* ===== Results Screen ===== */
+        .results-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .results-summary {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .summary-stat {
+            text-align: center;
+        }
+
+        .summary-stat .stat-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #00d2ff;
+        }
+
+        .summary-stat .stat-label {
+            font-size: 0.85em;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 4px;
+        }
+
+        .results-table-container {
+            margin-top: 25px;
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 10px;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+
+        .results-table th {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 12px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+        }
+
+        .results-table td {
+            padding: 8px 12px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .results-table tr:hover td {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-restart {
+            display: block;
+            margin: 25px auto 0;
+            padding: 14px 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-restart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-restart:active { transform: translateY(0); }
+
+        .screen { display: none; }
+        .screen.visible { display: block; }
+
+        /* Responsive */
+        @media (max-width: 500px) {
+            .container { padding: 20px 15px; }
+            .current-word { font-size: 2.2em; }
+            .btn { padding: 14px 8px; font-size: 0.95em; }
+            .chart-label { width: 70px; font-size: 0.72em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ===== Setup Screen ===== -->
+        <div class="screen visible" id="setupScreen">
+            <h1>分频段词汇测试</h1>
+            <p class="subtitle">基于 COCA 词频 · 贝叶斯 Beta-Binomial 模型 · 分频段独立估计认识概率</p>
+            <div class="setup-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>COCA 起始排名</label>
+                        <input type="number" id="inputStart" value="1000" min="1" max="60000">
+                    </div>
+                    <div class="form-group">
+                        <label>COCA 结束排名</label>
+                        <input type="number" id="inputEnd" value="20000" min="1" max="60000">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>每个频段大小 (k)</label>
+                    <input type="number" id="inputBinSize" value="1000" min="50" max="10000">
+                </div>
+                <button class="btn-start" id="btnStart">开始测试</button>
+            </div>
+        </div>
+
+        <!-- ===== Loading Screen ===== -->
+        <div class="screen" id="loadingScreen">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>正在加载词汇表...</p>
+            </div>
+        </div>
+
+        <!-- ===== Error Screen ===== -->
+        <div class="screen" id="errorScreen">
+            <div class="error-content">
+                <p>词汇表加载失败，请刷新页面重试。</p>
+            </div>
+        </div>
+
+        <!-- ===== Test Screen ===== -->
+        <div class="screen" id="testScreen">
+            <div class="test-info">
+                <span class="bin-label" id="binLabel">频段 1/10: COCA 1000–1999</span>
+                <span class="progress-label" id="ciInfo">90% CI: —</span>
+                <span class="progress-label" id="progressLabel">已完成 0/10 个频段</span>
+            </div>
+
+            <div class="word-display">
+                <div class="current-word" id="currentWord">—</div>
+                <div class="word-meta" id="wordMeta"></div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-know" id="btnKnow">认识</button>
+                <button class="btn btn-uncertain" id="btnUncertain">不确定</button>
+                <button class="btn btn-unknown" id="btnUnknown">不认识</button>
+            </div>
+
+            <div class="keyboard-hints">
+                按 <kbd>←</kbd> 或 <kbd>Y</kbd> 认识，<kbd>↓</kbd> 或 <kbd>M</kbd> 不确定，<kbd>→</kbd> 或 <kbd>N</kbd> 不认识
+            </div>
+
+            <div class="chart-section">
+                <div class="chart-title">各频段认识概率估计（90% 置信区间宽度 &lt; 0.1 时终止）</div>
+                <div class="chart-scroll" id="chartScroll">
+                    <div id="chartContainer"></div>
+                    <div class="chart-scale-row">
+                        <span class="chart-scale-spacer"></span>
+                        <span class="chart-scale-spacer-label"></span>
+                        <div class="chart-scale-track">
+                            <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+                        </div>
+                        <span class="chart-scale-end"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Results Screen ===== -->
+        <div class="screen" id="resultsScreen">
+            <div class="results-header">
+                <h1>测试完成</h1>
+                <p class="subtitle">各频段单词认识概率估计结果</p>
+            </div>
+
+            <div class="results-summary">
+                <div class="summary-stat">
+                    <div class="stat-value" id="totalBins">0</div>
+                    <div class="stat-label">频段数</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="stat-value" id="totalTested">0</div>
+                    <div class="stat-label">总测试词数</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="stat-value" id="totalKnown">0</div>
+                    <div class="stat-label">预估认识词数</div>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <div class="chart-title">认识概率分布</div>
+                <div class="chart-scroll">
+                    <div id="resultsChartContainer"></div>
+                    <div class="chart-scale-row">
+                        <span class="chart-scale-spacer"></span>
+                        <span class="chart-scale-spacer-label"></span>
+                        <div class="chart-scale-track">
+                            <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+                        </div>
+                        <span class="chart-scale-end"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-table-container">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>频段</th>
+                            <th>测试数</th>
+                            <th>认识概率</th>
+                            <th>90% CI</th>
+                            <th>CI 宽度</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody"></tbody>
+                </table>
+            </div>
+
+            <button class="btn-restart" id="btnRestart">重新测试</button>
+        </div>
+    </div>
+
+    <script>
+    // =========================================================
+    // Beta Distribution Math Utilities
+    // =========================================================
+    const BetaMath = {
+        // Log Gamma function via Lanczos approximation
+        lnGamma(x) {
+            if (x < 0.5) {
+                return Math.log(Math.PI / Math.sin(Math.PI * x)) - this.lnGamma(1 - x);
+            }
+            x -= 1;
+            const c = [
+                0.99999999999980993,
+                676.5203681218851,
+                -1259.1392167224028,
+                771.32342877765313,
+                -176.61502916214059,
+                12.507343278686905,
+                -0.13857109526572012,
+                9.9843695780195716e-6,
+                1.5056327351493116e-7
+            ];
+            let sum = c[0];
+            const t = x + 7.5; // x + g + 0.5, g = 7
+            for (let i = 1; i < c.length; i++) {
+                sum += c[i] / (x + i);
+            }
+            return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(sum);
+        },
+
+        // Regularized incomplete beta function I_x(a, b)
+        // Uses continued fraction representation (Lentz's algorithm)
+        betaIncomplete(x, a, b) {
+            if (x <= 0) return 0;
+            if (x >= 1) return 1;
+
+            // Use symmetry relation for better convergence
+            if (x > (a + 1) / (a + b + 2)) {
+                return 1 - this.betaIncomplete(1 - x, b, a);
+            }
+
+            const lnBeta = this.lnGamma(a) + this.lnGamma(b) - this.lnGamma(a + b);
+            const front = Math.exp(a * Math.log(x) + b * Math.log(1 - x) - lnBeta) / a;
+
+            const TINY = 1e-30;
+            let c = 1;
+            let d = 1 - (a + b) * x / (a + 1);
+            if (Math.abs(d) < TINY) d = TINY;
+            d = 1 / d;
+            let f = d;
+
+            for (let m = 1; m <= 200; m++) {
+                // Even step
+                let num = m * (b - m) * x / ((a + 2 * m - 1) * (a + 2 * m));
+                d = 1 + num * d;
+                if (Math.abs(d) < TINY) d = TINY;
+                c = 1 + num / c;
+                if (Math.abs(c) < TINY) c = TINY;
+                d = 1 / d;
+                f *= c * d;
+
+                // Odd step
+                num = -(a + m) * (a + b + m) * x / ((a + 2 * m) * (a + 2 * m + 1));
+                d = 1 + num * d;
+                if (Math.abs(d) < TINY) d = TINY;
+                c = 1 + num / c;
+                if (Math.abs(c) < TINY) c = TINY;
+                d = 1 / d;
+                const delta = c * d;
+                f *= delta;
+
+                if (Math.abs(delta - 1) < 1e-14) break;
+            }
+
+            return front * f;
+        },
+
+        // Inverse of regularized incomplete beta function (Beta quantile / ppf)
+        // Uses bisection method (100 iterations = ~10^-30 precision)
+        betaQuantile(p, a, b) {
+            if (p <= 0) return 0;
+            if (p >= 1) return 1;
+
+            let lo = 0, hi = 1;
+            for (let i = 0; i < 100; i++) {
+                const mid = (lo + hi) / 2;
+                if (this.betaIncomplete(mid, a, b) < p) {
+                    lo = mid;
+                } else {
+                    hi = mid;
+                }
+            }
+            return (lo + hi) / 2;
+        },
+
+        // Beta distribution mean: E[X] = a / (a + b)
+        mean(a, b) {
+            return a / (a + b);
+        },
+
+        // 90% credible interval: [5th percentile, 95th percentile]
+        ci90(a, b) {
+            return {
+                lower: this.betaQuantile(0.05, a, b),
+                upper: this.betaQuantile(0.95, a, b)
+            };
+        }
+    };
+
+    // =========================================================
+    // Binned Vocabulary Test
+    // =========================================================
+    class BinnedVocabTest {
+        constructor() {
+            this.words = [];
+            this.bins = [];
+            this.currentBinIndex = 0;
+            this.isComplete = false;
+            this.wordsLoaded = false;
+
+            this.MIN_SAMPLES = 5;
+            this.CI_WIDTH_THRESHOLD = 0.2;
+
+            this.bindEvents();
+        }
+
+        // ----- Event binding -----
+        bindEvents() {
+            document.getElementById('btnStart').addEventListener('click', () => this.handleStart());
+            document.getElementById('btnKnow').addEventListener('click', () => this.respond('know'));
+            document.getElementById('btnUncertain').addEventListener('click', () => this.respond('uncertain'));
+            document.getElementById('btnUnknown').addEventListener('click', () => this.respond('unknown'));
+            document.getElementById('btnRestart').addEventListener('click', () => this.restart());
+
+            document.addEventListener('keydown', (e) => {
+                if (this.isComplete) return;
+                if (!this.isScreenVisible('testScreen')) return;
+
+                if (e.key === 'ArrowLeft' || e.key === 'y' || e.key === 'Y') {
+                    e.preventDefault();
+                    this.respond('know');
+                } else if (e.key === 'ArrowDown' || e.key === 'm' || e.key === 'M') {
+                    e.preventDefault();
+                    this.respond('uncertain');
+                } else if (e.key === 'ArrowRight' || e.key === 'n' || e.key === 'N') {
+                    e.preventDefault();
+                    this.respond('unknown');
+                }
+            });
+        }
+
+        // ----- Screen management -----
+        isScreenVisible(id) {
+            return document.getElementById(id).classList.contains('visible');
+        }
+
+        showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
+            document.getElementById(id).classList.add('visible');
+        }
+
+        // ----- Start test -----
+        async handleStart() {
+            const startVal = parseInt(document.getElementById('inputStart').value);
+            const endVal = parseInt(document.getElementById('inputEnd').value);
+            const kVal = parseInt(document.getElementById('inputBinSize').value);
+
+            // Validate
+            if (isNaN(startVal) || isNaN(endVal) || isNaN(kVal)) {
+                alert('请输入有效的数字');
+                return;
+            }
+            if (startVal >= endVal) {
+                alert('起始排名必须小于结束排名');
+                return;
+            }
+            if (kVal < 10) {
+                alert('频段大小至少为 10');
+                return;
+            }
+            if (startVal < 1 || endVal > 60000) {
+                alert('排名范围必须在 1–60000 之间');
+                return;
+            }
+
+            this.showScreen('loadingScreen');
+
+            try {
+                if (!this.wordsLoaded) {
+                    await this.loadWords();
+                }
+                this.initBins(startVal, endVal, kVal);
+                this.showScreen('testScreen');
+                this.showNextWord();
+                this.updateInfoBar();
+                this.renderChart('chartContainer');
+            } catch (err) {
+                console.error('Init failed:', err);
+                this.showScreen('errorScreen');
+            }
+        }
+
+        // ----- Load word list -----
+        async loadWords() {
+            const resp = await fetch('https://huiget.github.io/COCA60000.txt');
+            if (!resp.ok) throw new Error('Failed to fetch word list');
+            const text = await resp.text();
+            this.words = text.split('\n').map(l => l.trim()).filter(w => w.length > 0);
+            this.wordsLoaded = true;
+            console.log(`Loaded ${this.words.length} words`);
+        }
+
+        // ----- Initialize bins -----
+        initBins(start, end, k) {
+            this.bins = [];
+            this.isComplete = false;
+            this.rangeStart = start;
+            this.rangeEnd = end;
+            this.binSize = k;
+
+            const maxRank = Math.min(end, this.words.length);
+
+            for (let i = start; i < maxRank; i += k) {
+                const binEnd = Math.min(i + k, maxRank);
+                // Collect all valid ranks in this bin
+                const ranks = [];
+                for (let r = i; r < binEnd; r++) {
+                    ranks.push(r);
+                }
+                // Fisher-Yates shuffle for random sampling order
+                for (let j = ranks.length - 1; j > 0; j--) {
+                    const idx = Math.floor(Math.random() * (j + 1));
+                    [ranks[j], ranks[idx]] = [ranks[idx], ranks[j]];
+                }
+                this.bins.push({
+                    start: i,
+                    end: binEnd,        // exclusive
+                    alpha: 1,           // Beta prior parameter
+                    beta: 1,            // Beta prior parameter
+                    tested: 0,
+                    done: false,
+                    sampleOrder: ranks,
+                    sampleIndex: 0
+                });
+            }
+
+            this.currentBinIndex = 0;
+        }
+
+        // ----- Respond to a word -----
+        respond(type) {
+            if (this.isComplete) return;
+
+            const bin = this.bins[this.currentBinIndex];
+
+            // Update Beta posterior
+            if (type === 'know') {
+                bin.alpha += 1;
+            } else if (type === 'unknown') {
+                bin.beta += 1;
+            } else {
+                // uncertain: half evidence for both sides
+                bin.alpha += 0.5;
+                bin.beta += 0.5;
+            }
+
+            bin.tested++;
+            bin.sampleIndex++;
+
+            // Check stopping condition for this bin
+            if (bin.tested >= this.MIN_SAMPLES) {
+                const ci = BetaMath.ci90(bin.alpha, bin.beta);
+                if (ci.upper - ci.lower < this.CI_WIDTH_THRESHOLD) {
+                    bin.done = true;
+                }
+            }
+
+            // Also stop if we've exhausted all words in the bin
+            if (bin.sampleIndex >= bin.sampleOrder.length) {
+                bin.done = true;
+            }
+
+            // If current bin is done, advance to next
+            if (bin.done) {
+                this.advanceBin();
+            }
+
+            // Check if all bins are done
+            if (this.bins.every(b => b.done)) {
+                this.isComplete = true;
+                this.showResults();
+                return;
+            }
+
+            this.showNextWord();
+            this.updateInfoBar();
+            this.renderChart('chartContainer');
+        }
+
+        // ----- Advance to next undone bin -----
+        advanceBin() {
+            for (let i = 1; i <= this.bins.length; i++) {
+                const idx = (this.currentBinIndex + i) % this.bins.length;
+                if (!this.bins[idx].done) {
+                    this.currentBinIndex = idx;
+                    return;
+                }
+            }
+        }
+
+        // ----- Show the next word -----
+        showNextWord() {
+            const bin = this.bins[this.currentBinIndex];
+            const rank = bin.sampleOrder[bin.sampleIndex];
+            const word = this.words[rank - 1] || '—';
+
+            document.getElementById('currentWord').textContent = word;
+            document.getElementById('wordMeta').textContent =
+                `COCA #${rank.toLocaleString()} · 本频段已测 ${bin.tested} 词`;
+        }
+
+        // ----- Update info bar -----
+        updateInfoBar() {
+            const doneBins = this.bins.filter(b => b.done).length;
+            const totalBins = this.bins.length;
+            const bin = this.bins[this.currentBinIndex];
+
+            document.getElementById('binLabel').textContent =
+                `频段 ${this.currentBinIndex + 1}/${totalBins}: COCA ${bin.start.toLocaleString()}–${(bin.end - 1).toLocaleString()}`;
+            document.getElementById('progressLabel').textContent =
+                `已完成 ${doneBins}/${totalBins} 个频段`;
+
+            // Current bin CI info
+            if (bin.tested > 0) {
+                const ci = BetaMath.ci90(bin.alpha, bin.beta);
+                const mean = BetaMath.mean(bin.alpha, bin.beta);
+                const width = ci.upper - ci.lower;
+                document.getElementById('ciInfo').innerHTML =
+                    `p = ${(mean * 100).toFixed(1)}%，90% CI [${(ci.lower * 100).toFixed(1)}%, ${(ci.upper * 100).toFixed(1)}%]，宽度 <strong style="color:${width < this.CI_WIDTH_THRESHOLD ? '#38ef7d' : '#00d2ff'}">${(width * 100).toFixed(1)}%</strong>`;
+            } else {
+                document.getElementById('ciInfo').textContent = '90% CI: —';
+            }
+        }
+
+        // ----- Format a number for display -----
+        formatNum(n) {
+            if (n >= 10000) return Math.round(n / 1000) + 'k';
+            if (n >= 1000) {
+                const k = n / 1000;
+                return (k % 1 === 0) ? k + 'k' : k.toFixed(1) + 'k';
+            }
+            return n.toString();
+        }
+
+        // ----- Render chart into a container -----
+        renderChart(containerId) {
+            const container = document.getElementById(containerId);
+            let html = '';
+
+            for (let i = 0; i < this.bins.length; i++) {
+                const bin = this.bins[i];
+                const isActive = (i === this.currentBinIndex) && !this.isComplete;
+                const hasTested = bin.tested > 0;
+
+                // Status icon and color
+                let status, statusColor;
+                if (bin.done) {
+                    status = '✓';
+                    statusColor = '#38ef7d';
+                } else if (isActive) {
+                    status = '▶';
+                    statusColor = '#00d2ff';
+                } else {
+                    status = '○';
+                    statusColor = 'rgba(255,255,255,0.3)';
+                }
+
+                // Bin range label
+                const label = `${this.formatNum(bin.start)}–${this.formatNum(bin.end)}`;
+
+                // Compute mean and CI
+                const mean = BetaMath.mean(bin.alpha, bin.beta);
+                const ci = BetaMath.ci90(bin.alpha, bin.beta);
+                const ciWidth = ci.upper - ci.lower;
+
+                // Color hue: 0 (red) → 60 (yellow) → 120 (green)
+                const hue = Math.round(mean * 120);
+
+                // Track content
+                let trackInner = '';
+                if (hasTested) {
+                    trackInner = `<div class="chart-ci" style="left:${(ci.lower * 100).toFixed(2)}%;width:${(ciWidth * 100).toFixed(2)}%;background:hsla(${hue},70%,50%,0.35)"></div>`
+                        + `<div class="chart-mean-line" style="left:${(mean * 100).toFixed(2)}%"></div>`;
+                }
+
+                // Value text: mean% + CI width
+                let valueHtml;
+                if (hasTested) {
+                    const converged = ciWidth < this.CI_WIDTH_THRESHOLD;
+                    valueHtml = `${Math.round(mean * 100)}%`
+                        + `<span class="chart-ci-width${converged ? ' converged' : ''}">±${(ciWidth * 50).toFixed(1)}%</span>`;
+                } else {
+                    valueHtml = '—';
+                }
+
+                html += `<div class="chart-row${isActive ? ' active' : ''}">`
+                    + `<span class="chart-status" style="color:${statusColor}">${status}</span>`
+                    + `<span class="chart-label">${label}</span>`
+                    + `<div class="chart-track">${trackInner}</div>`
+                    + `<span class="chart-value">${valueHtml}</span>`
+                    + `</div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // ----- Show results -----
+        showResults() {
+            // Render results chart
+            this.renderChart('resultsChartContainer');
+
+            // Summary stats
+            const totalTested = this.bins.reduce((s, b) => s + b.tested, 0);
+            const totalKnown = this.bins.reduce((s, b) => {
+                const mean = BetaMath.mean(b.alpha, b.beta);
+                return s + Math.round(mean * (b.end - b.start));
+            }, 0);
+
+            document.getElementById('totalBins').textContent = this.bins.length;
+            document.getElementById('totalTested').textContent = totalTested;
+            document.getElementById('totalKnown').textContent = totalKnown.toLocaleString();
+
+            // Results table
+            const tbody = document.getElementById('resultsTableBody');
+            let tableHtml = '';
+
+            for (const bin of this.bins) {
+                const mean = BetaMath.mean(bin.alpha, bin.beta);
+                const ci = BetaMath.ci90(bin.alpha, bin.beta);
+                const ciWidth = ci.upper - ci.lower;
+                const label = `${this.formatNum(bin.start)}–${this.formatNum(bin.end)}`;
+
+                tableHtml += '<tr>'
+                    + `<td>${label}</td>`
+                    + `<td>${bin.tested}</td>`
+                    + `<td>${(mean * 100).toFixed(1)}%</td>`
+                    + `<td>[${(ci.lower * 100).toFixed(1)}%, ${(ci.upper * 100).toFixed(1)}%]</td>`
+                    + `<td>${(ciWidth * 100).toFixed(1)}%</td>`
+                    + '</tr>';
+            }
+
+            tbody.innerHTML = tableHtml;
+
+            this.showScreen('resultsScreen');
+        }
+
+        // ----- Restart -----
+        restart() {
+            this.showScreen('setupScreen');
+        }
+    }
+
+    // =========================================================
+    // Initialize
+    // =========================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        new BinnedVocabTest();
+    });
+    </script>
+</body>
+</html>
