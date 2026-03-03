@@ -3510,8 +3510,8 @@ Translation:`;
                 const readerContent = document.getElementById('reader-content');
                 if (!readerContent) return;
                 
-                // 获取所有文本段落（p, h1-h6, li, blockquote 等）
-                const textElements = readerContent.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, dt, dd, figcaption');
+                // 获取所有文本段落（p, h1-h6, li, blockquote, 以及不含块级子元素的 div 等）
+                const textElements = readerContent.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, dt, dd, figcaption, div:not(:has(p, div, h1, h2, h3, h4, h5, h6, li, blockquote, ul, ol, table))');
                 
                 // 为每个段落创建追踪数据
                 textElements.forEach((el, index) => {
@@ -4095,8 +4095,8 @@ Translation:`;
                 const readerContent = document.getElementById('reader-content');
                 if (!readerContent) return;
                 
-                // 获取所有可标注的段落元素
-                const paragraphs = readerContent.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, dt, dd, figcaption');
+                // 获取所有可标注的段落元素（包含不含块级子元素的 div，兼容以 div 作为段落的 epub）
+                const paragraphs = readerContent.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, blockquote, td, th, dt, dd, figcaption, div:not(:has(p, div, h1, h2, h3, h4, h5, h6, li, blockquote, ul, ol, table))');
                 
                 // 为每个段落分配唯一ID
                 paragraphs.forEach((el, index) => {
