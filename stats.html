@@ -5,362 +5,1010 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>英文甜区</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+:root {
+    --side-bar-bg-color: #fff;
+    --control-text-color: #555;
+    --font-sans-serif: 'Ubuntu', 'Source Sans Pro', sans-serif !important;
+    --font-monospace: 'Fira Code', 'Roboto Mono', monospace !important;
+}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: radial-gradient(circle at top, #e6f0ff, #f7f8fc 45%, #ffffff 100%);
-            color: #0f172a;
-            padding: 36px 20px 56px;
-        }
+*,
+*:before,
+*:after {
+    box-sizing: border-box;
+}
 
-        .container {
-            max-width: 1140px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+html {
+    font-size: 16px;
+}
 
-        .hero {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+body {
+    font-family: var(--font-sans-serif);
+    color: #34495e;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6rem;
+    letter-spacing: 0;
+    margin: 0;
+    overflow-x: hidden;
+    min-height: 100vh;
+    background: radial-gradient(circle at top, #e6f0ff, #f7f8fc 45%, #ffffff 100%);
+}
 
-        h1 {
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: 0.3px;
-        }
+#write {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 20px 30px 100px;
+}
 
-        .subtitle {
-            font-size: 14px;
-            color: #475569;
-        }
+#write p {
+    line-height: 1.6rem;
+    word-spacing: .05rem;
+}
 
-        .card {
-            background: rgba(255, 255, 255, 0.92);
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
-            border: 1px solid rgba(148, 163, 184, 0.18);
-            backdrop-filter: blur(6px);
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            align-items: stretch;
-            text-align: left;
-        }
+#write ol li {
+    padding-left: 0.5rem;
+}
 
-        .filters {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 14px;
-            align-items: start;
-        }
+#write > ul:first-child,
+#write > ol:first-child {
+    margin-top: 30px;
+}
 
-        .filter-group {
-            display: grid;
-            gap: 10px;
-            padding: 12px;
-            border-radius: 12px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-        }
+body > *:first-child {
+    margin-top: 0 !important;
+}
 
-        .filter-group label {
-            font-size: 13px;
-            color: #475569;
-            font-weight: 600;
-        }
+body > *:last-child {
+    margin-bottom: 0 !important;
+}
 
-        .filter-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
+a {
+    color: #3b82f6;
+    font-weight: 600;
+    padding: 0 2px;
+    text-decoration: none;
+}
 
-        .filter-inputs.single {
-            grid-template-columns: 1fr;
-        }
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    position: relative;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    line-height: 1.4;
+    cursor: text;
+}
 
-        .range-slider {
-            position: relative;
-            height: 26px;
-            display: flex;
-            align-items: center;
-        }
+h1:hover a.anchor,
+h2:hover a.anchor,
+h3:hover a.anchor,
+h4:hover a.anchor,
+h5:hover a.anchor,
+h6:hover a.anchor {
+    text-decoration: none;
+}
 
-        .range-track {
-            position: absolute;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: #e2e8f0;
-            border-radius: 999px;
-        }
+h1 tt,
+h1 code {
+    font-size: inherit !important;
+}
 
-        .range-fill {
-            position: absolute;
-            height: 6px;
-            background: linear-gradient(90deg, #6366f1, #38bdf8);
-            border-radius: 999px;
-        }
+h2 tt,
+h2 code {
+    font-size: inherit !important;
+}
 
-        .range-slider input[type="range"] {
-            position: absolute;
-            left: 0;
-            right: 0;
-            width: 100%;
-            height: 26px;
-            background: transparent;
-            pointer-events: none;
-            -webkit-appearance: none;
-            appearance: none;
-        }
+h3 tt,
+h3 code {
+    font-size: inherit !important;
+}
 
-        .range-slider input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            border: 3px solid #6366f1;
-            background: #ffffff;
-            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
-            pointer-events: auto;
-            cursor: pointer;
-        }
+h4 tt,
+h4 code {
+    font-size: inherit !important;
+}
 
-        .range-slider input[type="range"]::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            border: 3px solid #6366f1;
-            background: #ffffff;
-            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
-            pointer-events: auto;
-            cursor: pointer;
-        }
+h5 tt,
+h5 code {
+    font-size: inherit !important;
+}
 
-        .range-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #94a3b8;
-        }
+h6 tt,
+h6 code {
+    font-size: inherit !important;
+}
 
-        input[type="number"] {
-            width: 100%;
-            padding: 9px 12px;
-            border: 1px solid #cbd5f5;
-            border-radius: 10px;
-            font-size: 14px;
-            background: #f8fbff;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
+h2 a,
+h3 a {
+    color: #34495e;
+}
 
-        input[type="text"] {
-            width: 100%;
-            padding: 9px 12px;
-            border: 1px solid #cbd5f5;
-            border-radius: 10px;
-            font-size: 14px;
-            background: #f8fbff;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
+h1 {
+    padding-bottom: .4rem;
+    font-size: 2.2rem;
+    line-height: 1.3;
+}
 
-        input[type="number"]:focus,
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #6366f1;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-            background: #ffffff;
-        }
+h2 {
+    font-size: 1.75rem;
+    line-height: 1.225;
+    margin: 35px 0 15px;
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid #ddd;
+}
 
-        input::placeholder {
-            color: #94a3b8;
-        }
+h3 {
+    font-size: 1.4rem;
+    line-height: 1.43;
+    margin: 20px 0 7px;
+}
 
-        .status {
-            font-size: 13px;
-            color: #64748b;
-        }
+h4 {
+    font-size: 1.2rem;
+}
 
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            border-radius: 999px;
-            background: #eef2ff;
-            color: #4338ca;
-            font-size: 12px;
-            font-weight: 600;
-            align-self: flex-start;
-            margin-bottom: 6px;
-        }
+h5 {
+    font-size: 1rem;
+}
 
-        .pagination {
-            margin-top: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-            font-size: 13px;
-            color: #64748b;
-        }
+h6 {
+    font-size: 1rem;
+    color: #555555;
+}
 
-        .pagination-controls {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
+p,
+blockquote,
+ul,
+ol,
+dl,
+table {
+    margin: 0.8em 0;
+}
 
-        .pagination button {
-            border: 1px solid #cbd5f5;
-            background: #ffffff;
-            color: #4338ca;
-            padding: 6px 12px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s, border-color 0.2s, color 0.2s;
-        }
+li > ol,
+li > ul {
+    margin: 0 0;
+}
 
-        .pagination button:disabled {
-            color: #94a3b8;
-            border-color: #e2e8f0;
-            cursor: not-allowed;
-            background: #f8fafc;
-        }
+hr {
+    height: 2px;
+    padding: 0;
+    margin: 16px 0;
+    background-color: #cccccc;
+    border: 0 none;
+    overflow: hidden;
+    box-sizing: content-box;
+}
 
-        .page-jump {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-        }
+body > h2:first-child {
+    margin-top: 0;
+    padding-top: 0;
+}
 
-        .page-jump input[type="number"] {
-            width: 76px;
-            padding: 6px 10px;
-            font-size: 12px;
-        }
+body > h1:first-child {
+    margin-top: 0;
+    padding-top: 0;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 6px;
-        }
+body > h1:first-child + h2 {
+    margin-top: 0;
+    padding-top: 0;
+}
 
-        thead th {
-            text-align: left;
-            font-size: 13px;
-            color: #64748b;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #e2e8f0;
-            font-weight: 600;
-        }
+body > h3:first-child,
+body > h4:first-child,
+body > h5:first-child,
+body > h6:first-child {
+    margin-top: 0;
+    padding-top: 0;
+}
 
-        thead th:nth-child(2),
-        tbody td:nth-child(2) {
-            width: 80px;
-        }
+a:first-child h1,
+a:first-child h2,
+a:first-child h3,
+a:first-child h4,
+a:first-child h5,
+a:first-child h6 {
+    margin-top: 0;
+    padding-top: 0;
+}
 
-        thead th:nth-child(3),
-        tbody td:nth-child(3) {
-            width: 60px;
-        }
+h1 p,
+h2 p,
+h3 p,
+h4 p,
+h5 p,
+h6 p {
+    margin-top: 0;
+}
 
-        thead th:nth-child(4),
-        tbody td:nth-child(4) {
-            width: 60px;
-        }
+li p.first {
+    display: inline-block;
+}
 
-        tbody td {
-            padding: 12px 0;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 14px;
-        }
+ul,
+ol {
+    padding-left: 30px;
+}
 
-        tbody tr:hover {
-            background: #f8fafc;
-        }
+ul:first-child,
+ol:first-child {
+    margin-top: 0;
+}
 
-        .empty-state {
-            text-align: center;
-            padding: 30px 0;
-            color: #9ca3af;
-        }
+ul:last-child,
+ol:last-child {
+    margin-bottom: 0;
+}
+
+blockquote {
+    border-left: 4px solid #3b82f6;
+    padding: 10px 15px;
+    color: #555;
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+table {
+    padding: 0;
+    word-break: initial;
+}
+
+table tr {
+    border-top: 1px solid #cccccc;
+    margin: 0;
+    padding: 0;
+}
+
+table tr:nth-child(2n),
+thead {
+    background-color: #fafafa;
+}
+
+table tr th {
+    font-weight: bold;
+    border: 1px solid #cccccc;
+    border-bottom: 0;
+    text-align: left;
+    margin: 0;
+    padding: 6px 13px;
+}
+
+table tr td {
+    border: 1px solid #cccccc;
+    text-align: left;
+    margin: 0;
+    padding: 6px 13px;
+}
+
+table tr th:first-child,
+table tr td:first-child {
+    margin-top: 0;
+}
+
+table tr th:last-child,
+table tr td:last-child {
+    margin-bottom: 0;
+}
+
+#write strong {
+    padding: 0 1px;
+}
+
+#write em {
+    padding: 0 5px 0 2px;
+}
+
+#write table thead th {
+    background-color: #f2f2f2;
+}
+
+#write .CodeMirror-gutters {
+    border-right: none;
+}
+
+#write .md-fences {
+    border: 1px solid #F4F4F4;
+    -webkit-font-smoothing: initial;
+    margin: 0.8rem 0 !important;
+    padding: 0.3rem 0 !important;
+    line-height: 1.43rem;
+    background-color: #F8F8F8 !important;
+    border-radius: 2px;
+    font-family: var(--font-monospace);
+    font-size: 0.85rem;
+    word-wrap: normal;
+}
+
+#write .CodeMirror-wrap .CodeMirror-code pre {
+    padding-left: 12px;
+}
+
+#write code, tt {
+    padding: 2px 4px;
+    border-radius: 2px;
+    font-family: var(--font-monospace);
+    font-size: 0.92rem;
+    color: #e96900;
+    background-color: #f8f8f8;
+}
+
+tt {
+    margin: 0 2px;
+}
+
+#write .md-footnote {
+    background-color: #f8f8f8;
+    color: #e96900;
+}
+
+/* heighlight. */
+#write mark {
+    background-color: #EBFFEB;
+    border-radius: 2px;
+    padding: 2px 4px;
+    margin: 0 2px;
+    color: #222;
+    font-weight: 500;
+}
+
+#write del {
+    padding: 1px 2px;
+}
+
+.cm-s-inner .cm-link,
+.cm-s-inner.cm-link {
+    color: #22a2c9;
+}
+
+.cm-s-inner .cm-string {
+    color: #22a2c9;
+}
+
+.md-task-list-item > input {
+    margin-left: -1.3em;
+}
+
+@media print {
+    html {
+        font-size: 13px;
+    }
+
+    table,
+    pre {
+        page-break-inside: avoid;
+    }
+
+    pre {
+        word-wrap: break-word;
+    }
+}
+
+.md-fences {
+    background-color: #f8f8f8;
+}
+
+.md-diagram-panel {
+    position: static !important;
+}
+
+#write pre.md-meta-block {
+    padding: 1rem;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: #f7f7f7;
+    border: 0;
+    border-radius: 3px;
+    color: #555555;
+    margin-top: 0 !important;
+}
+
+.mathjax-block > .code-tooltip {
+    bottom: .375rem;
+}
+
+#write > h3.md-focus:before {
+    left: -1.5625rem;
+    top: .375rem;
+}
+
+#write > h4.md-focus:before {
+    left: -1.5625rem;
+    top: .285714286rem;
+}
+
+#write > h5.md-focus:before {
+    left: -1.5625rem;
+    top: .285714286rem;
+}
+
+#write > h6.md-focus:before {
+    left: -1.5625rem;
+    top: .285714286rem;
+}
+
+.md-image > .md-meta {
+    border-radius: 3px;
+    font-family: var(--font-monospace);
+    padding: 2px 0 0 4px;
+    font-size: 0.9em;
+    color: inherit;
+}
+
+.md-tag {
+    color: inherit;
+}
+
+.md-toc {
+    margin-top: 20px;
+    padding-bottom: 20px;
+}
+
+.sidebar-tabs {
+    border-bottom: none;
+}
+
+#typora-quick-open {
+    border: 1px solid #ddd;
+    background-color: #f8f8f8;
+}
+
+#typora-quick-open-item {
+    background-color: #FAFAFA;
+    border-color: #FEFEFE #e5e5e5 #e5e5e5 #eee;
+    border-style: solid;
+    border-width: 1px;
+}
+
+#md-notification:before {
+    top: 10px;
+}
+
+/** focus mode */
+
+.on-focus-mode blockquote {
+    border-left-color: rgba(85, 85, 85, 0.12);
+}
+
+header,
+.context-menu,
+.megamenu-content,
+footer {
+    font-family: var(--font-sans-serif);
+}
+
+.file-node-content:hover .file-node-icon,
+.file-node-content:hover .file-node-open-state {
+    visibility: visible;
+}
+
+.mac-seamless-mode #typora-sidebar {
+    background-color: var(--side-bar-bg-color);
+}
+
+.md-lang {
+    color: #b4654d;
+}
+
+.html-for-mac .context-menu {
+    --item-hover-bg-color: #E6F0FE;
+}
+
+/* Custom App Styles */
+.container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.hero {
+    margin-bottom: 1rem;
+}
+.hero h1 {
+    border-bottom: none;
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+}
+.hero div {
+    font-size: 1.1rem;
+    color: #333333;
+    line-height: 1.6;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    align-items: start;
+    margin-bottom: 0px;
+}
+.filters:last-child {
+    margin-bottom: 0;
+}
+
+.filter-panel {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0px;
+}
+
+.filter-group label {
+    font-size: 15px;
+    color: #1a202c;
+    font-weight: 600;
+    margin-bottom: 0;
+}
+
+.filter-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.filter-inputs.single {
+    grid-template-columns: 1fr;
+}
+
+input[type="text"],
+input[type="number"],
+select {
+    width: 100%;
+    padding: 0 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #2d3748;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #fff;
+    height: 42px;
+    line-height: 40px;
+}
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Placeholder color */
+    ::placeholder {
+        color: #555555;
+        opacity: 1; /* Firefox */
+    }
+
+    /* Range Slider */
+.range-slider {
+    position: relative;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    margin-top: 4px;
+}
+.range-track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 999px;
+}
+.range-fill {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 4px;
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
+    border-radius: 999px;
+}
+.range-slider input[type="range"] {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 24px;
+    background: transparent;
+    pointer-events: none;
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+.range-slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 2px solid #3b82f6;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    pointer-events: auto;
+    cursor: pointer;
+    margin-top: 0;
+}
+.range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #555555;
+    margin-top: 4px;
+}
+
+/* Badges & Status */
+.status {
+    font-size: 13px;
+    color: #555555;
+}
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #eff6ff; /* Light blue bg */
+    color: #1d4ed8;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Genre Tags */
+.genre-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.genre-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #f8f8f8;
+    color: #333333;
+    font-size: 12px;
+    border: 1px solid #cccccc;
+}
+.author-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.author-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #f0f7ff;
+    color: #333333;
+    font-size: 16px;
+    border: 1px solid #bfdbfe;
+    width: fit-content;
+}
+.genre-filter-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 8px;
+    background: #f9f9f9;
+    border: 1px solid #999999;
+    border-radius: 4px;
+}
+.genre-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #34495e;
+    cursor: pointer;
+}
+.genre-option input[type="checkbox"] {
+    accent-color: #3b82f6;
+    width: 16px;
+    height: 16px;
+}
+.filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+.filter-actions button {
+    border: 1px solid #999999;
+    background: #fff;
+    color: #333333;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.filter-actions button:hover {
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+.genre-count {
+    font-size: 12px;
+    color: #555555;
+    margin-left: auto;
+}
+
+/* Result Header & Table */
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #cccccc;
+}
+.sort-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.sort-control label {
+    font-size: 13px;
+    color: #2c3e50;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0;
+}
+thead th {
+    text-align: left;
+    font-size: 15px;
+    color: #333333;
+    padding: 12px;
+    border-bottom: 2px solid #cccccc;
+    font-weight: 600;
+    white-space: nowrap;
+    background-color: #f8f8f8;
+    vertical-align: middle;
+}
+tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #cccccc;
+    font-size: 16px;
+    vertical-align: middle;
+    color: #333333;
+    line-height: 1.5;
+}
+tbody tr:hover td {
+    background-color: #f8f8f8;
+}
+a {
+    color: #3b82f6;
+    text-decoration: none;
+    font-weight: 500;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+/* Pagination */
+.pagination {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #cccccc;
+}
+.pagination-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.pagination button {
+    border: 1px solid #999999;
+    background: #fff;
+    color: #333333;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+}
+.pagination button:hover:not(:disabled) {
+    border-color: #3b82f6;
+    color: #3b82f6;
+}
+.pagination button:disabled {
+    color: #777777;
+    cursor: not-allowed;
+    background: #f9f9f9;
+}
+.page-jump {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.page-jump input[type="number"] {
+    width: 60px;
+    padding: 6px;
+    font-size: 13px;
+}
+
+/* Sortable Headers */
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 20px;
+}
+th.sortable:hover {
+    background-color: #cccccc;
+}
+th.sortable::after {
+    content: '';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0; 
+    height: 0; 
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    opacity: 0.3;
+}
+th.sortable.asc::after {
+    border-bottom: 6px solid #2c3e50;
+    opacity: 1;
+}
+th.sortable.desc::after {
+    border-top: 6px solid #2c3e50;
+    opacity: 1;
+}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="hero">
             <h1>英文甜区</h1>
-            <div class="subtitle">基于 COCA 词频分位点筛选书籍</div>
+            <div>
+                <p>从 ESL 的研究来看，单词覆盖率达到 90-95% 是阅读的底线，98% 是流畅阅读的分界线。</p>
+                <p>这个网站帮你基于 COCA 词频 98 分位点筛选书籍，找到自己英文阅读的甜点区。当然，你也可以根据 95 分位点来挑战自我。这里的评分采用的 goodreads 网站（类似于豆瓣）用户对书籍的打分。</p>
+                <p>你可以先在<a href="https://huiget.github.io/vocab-test.html" target="_blank" rel="noopener noreferrer">这里</a>测试自己的大致词汇量。如果希望更准确地知道 COCA 各个分段的词汇掌握情况可以在<a href="https://huiget.github.io/vocab-bin-test.html" target="_blank" rel="noopener noreferrer">这里</a>测试。可以用<a href="https://huiget.github.io/epub-reader.html" target="_blank" rel="noopener noreferrer">这个阅读器</a>进行阅读，优点是鼠标悬浮就立即显示生词释义，最小化对阅读流畅性的干扰。</p>
+                <p>感谢<a href="https://www.zhihu.com/people/wulemin" target="_blank" rel="noopener noreferrer">吴乐旻博士</a>建议制作这个网站。</p>
+            </div>
         </div>
         <div class="card filter-card">
-            <div class="filter-group">
-                <label>书名</label>
-                <div class="filter-inputs single">
-                    <input id="name-filter" type="text" placeholder="输入关键词">
+            <div class="filters">
+                <div class="filter-panel">
+                    <div class="filter-group">
+                        <label>书名</label>
+                        <div class="filter-inputs single">
+                            <input id="name-filter" type="text" placeholder="输入关键词">
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-panel">
+                    <div class="filter-group">
+                        <label>作者</label>
+                        <div class="filter-inputs single">
+                            <input id="author-filter" type="text" placeholder="输入作者关键词">
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="filters">
-                <div class="filter-group">
-                    <label>COCA P95 分位点</label>
-                    <div class="filter-inputs">
-                        <input id="p95-min" type="number" placeholder="最小值">
-                        <input id="p95-max" type="number" placeholder="最大值">
-                    </div>
-                    <div class="range-slider">
-                        <div class="range-track"></div>
-                        <div class="range-fill" id="p95-range-fill"></div>
-                        <input id="p95-min-range" type="range">
-                        <input id="p95-max-range" type="range">
-                    </div>
-                    <div class="range-labels">
-                        <span id="p95-range-min-label">最小值</span>
-                        <span id="p95-range-max-label">最大值</span>
+                <div class="filter-panel">
+                    <div class="filter-group">
+                        <label>评分</label>
+                        <div class="filter-inputs single">
+                            <input id="rating-min" type="number" step="0.1" placeholder="最小值">
+                        </div>
                     </div>
                 </div>
-                <div class="filter-group">
-                    <label>COCA P98 分位点</label>
-                    <div class="filter-inputs">
-                        <input id="p98-min" type="number" placeholder="最小值">
-                        <input id="p98-max" type="number" placeholder="最大值">
+                <div class="filter-panel">
+                    <div class="filter-group">
+                        <label>评分人数</label>
+                        <div class="filter-inputs single">
+                            <input id="ratings-count-min" type="number" placeholder="最小值">
+                        </div>
                     </div>
-                    <div class="range-slider">
-                        <div class="range-track"></div>
-                        <div class="range-fill" id="p98-range-fill"></div>
-                        <input id="p98-min-range" type="range">
-                        <input id="p98-max-range" type="range">
+                </div>
+            </div>
+            <div class="filters">
+                <div class="filter-panel">
+                    <div class="filter-group">
+                        <label>按类型筛选</label>
+                        <div class="filter-actions">
+                            <button id="genre-select-all" type="button">全选</button>
+                            <button id="genre-clear" type="button">清空</button>
+                            <span class="genre-count" id="genre-count">已选 0，结果 0 条</span>
+                        </div>
+                        <div class="genre-filter-list" id="genre-filter-list"></div>
                     </div>
-                    <div class="range-labels">
-                        <span id="p98-range-min-label">最小值</span>
-                        <span id="p98-range-max-label">最大值</span>
+                </div>
+            </div>
+            <div class="filters">
+                <div class="filter-panel">
+                    <div class="filter-group">
+                        <label>COCA P95 分位点</label>
+                        <div class="filter-inputs">
+                            <input id="p95-min" type="number" placeholder="最小值">
+                            <input id="p95-max" type="number" placeholder="最大值">
+                        </div>
+                        <div class="range-slider">
+                            <div class="range-track"></div>
+                            <div class="range-fill" id="p95-range-fill"></div>
+                            <input id="p95-min-range" type="range">
+                            <input id="p95-max-range" type="range">
+                        </div>
+                        <div class="range-labels">
+                            <span id="p95-range-min-label">最小值</span>
+                            <span id="p95-range-max-label">最大值</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-panel">
+                    <div class="filter-group">
+                        <label>COCA P98 分位点</label>
+                        <div class="filter-inputs">
+                            <input id="p98-min" type="number" placeholder="最小值">
+                            <input id="p98-max" type="number" placeholder="最大值">
+                        </div>
+                        <div class="range-slider">
+                            <div class="range-track"></div>
+                            <div class="range-fill" id="p98-range-fill"></div>
+                            <input id="p98-min-range" type="range">
+                            <input id="p98-max-range" type="range">
+                        </div>
+                        <div class="range-labels">
+                            <span id="p98-range-min-label">最小值</span>
+                            <span id="p98-range-max-label">最大值</span>
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="status" id="status">正在加载数据...</div>
         </div>
         <div class="card result-card">
-            <div class="badge" id="result-count">结果：0 条</div>
+            <div class="result-header">
+                <div class="badge" id="result-count">结果：0 条</div>
+            </div>
             <table>
                 <thead>
                     <tr>
-                        <th>书名</th>
-                        <th>总字数</th>
-                        <th>P95</th>
-                        <th>P98</th>
+                        <th class="sortable" data-sort="title">书名</th>
+                        <th class="sortable" data-sort="authors">作者</th>
+                        <th>类型</th>
+                        <th class="sortable" data-sort="averageRating">评分</th>
+                        <th class="sortable" data-sort="ratingsCount">评分人数</th>
+                        <th class="sortable" data-sort="totalWords">总字数</th>
+                        <th class="sortable" data-sort="cocaP95">P95</th>
+                        <th class="sortable" data-sort="cocaP98">P98</th>
                     </tr>
                 </thead>
                 <tbody id="table-body"></tbody>
@@ -380,7 +1028,7 @@
     </div>
 
     <script>
-        const dataUrl = "./stats_dir_full_filterd.csv";
+        const dataUrl = "./stats_goodreads.csv";
         const statusEl = document.getElementById("status");
         const resultCountEl = document.getElementById("result-count");
         const tableBody = document.getElementById("table-body");
@@ -390,6 +1038,13 @@
         const pageJumpInput = document.getElementById("page-jump-input");
         const pageJumpBtn = document.getElementById("page-jump-btn");
         const nameFilterInput = document.getElementById("name-filter");
+        const authorFilterInput = document.getElementById("author-filter");
+        const ratingMinInput = document.getElementById("rating-min");
+        const ratingsCountMinInput = document.getElementById("ratings-count-min");
+        const genreFilterListEl = document.getElementById("genre-filter-list");
+        const genreSelectAllBtn = document.getElementById("genre-select-all");
+        const genreClearBtn = document.getElementById("genre-clear");
+        const genreCountEl = document.getElementById("genre-count");
         const p95MinInput = document.getElementById("p95-min");
         const p95MaxInput = document.getElementById("p95-max");
         const p98MinInput = document.getElementById("p98-min");
@@ -404,8 +1059,11 @@
         const p98RangeMaxLabel = document.getElementById("p98-range-max-label");
         const p95RangeFill = document.getElementById("p95-range-fill");
         const p98RangeFill = document.getElementById("p98-range-fill");
+        // const sortSelect = document.getElementById("sort-select"); // Removed
         let allRows = [];
         let filteredRows = [];
+        let allGenres = [];
+        let selectedGenres = new Set();
         let p95Bounds = { min: 0, max: 0 };
         let p98Bounds = { min: 0, max: 0 };
         const resultCard = document.querySelector(".result-card");
@@ -414,6 +1072,18 @@
         const paginationEl = resultCard.querySelector(".pagination");
         let pageSize = 15;
         let currentPage = 1;
+        let sortKey = "averageRating";
+        let sortDir = "desc";
+
+        const updateSortUI = () => {
+            const ths = tableHead.querySelectorAll("th.sortable");
+            ths.forEach(th => {
+                th.classList.remove("asc", "desc");
+                if (th.dataset.sort === sortKey) {
+                    th.classList.add(sortDir);
+                }
+            });
+        };
 
         const toNumber = (value) => {
             const trimmed = value.trim();
@@ -424,7 +1094,6 @@
             return Number.isFinite(num) ? num : null;
         };
 
-        const cleanName = (value) => value.replace(/\.epub\.txt$/i, "");
         const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
         const normalizeRanges = (minRangeEl, maxRangeEl) => {
             const minValue = Number(minRangeEl.value);
@@ -432,6 +1101,235 @@
             if (minValue > maxValue) {
                 maxRangeEl.value = minValue;
             }
+        };
+
+        const isValidUrl = (value) => {
+            if (!value) {
+                return false;
+            }
+            try {
+                const url = new URL(value);
+                return url.protocol === "http:" || url.protocol === "https:";
+            } catch (error) {
+                return false;
+            }
+        };
+
+        const GENRE_ENUM = {
+            "science-fiction": ["science-fiction", "sci-fi"],
+            "young-adult": ["young-adult", "ya"],
+            "comics": ["comics", "graphic-novels"],
+            "children": ["children", "kids"],
+            "fiction": ["fiction"],
+            "non-fiction": ["non-fiction"],
+            "romance": ["romance"],
+            "contemporary": ["contemporary"],
+            "fantasy": ["fantasy"],
+            "history": ["history"],
+            "mystery": ["mystery"],
+            "historical": ["historical"],
+            "adventure": ["adventure"],
+            "literature": ["literature"],
+            "classics": ["classics"],
+            "thriller": ["thriller"],
+            "crime": ["crime"],
+            "humor": ["humor"],
+            "drama": ["drama"],
+            "biography": ["biography"],
+            "paranormal": ["paranormal"],
+            "science": ["science"],
+            "horror": ["horror"],
+            "philosophy": ["philosophy"],
+            "religion": ["religion"],
+            "memoir": ["memoir"],
+            "politics": ["politics"],
+            "war": ["war"],
+            "psychology": ["psychology"],
+            "urban-fantasy": ["urban-fantasy"],
+            "poetry": ["poetry"],
+            "art": ["art"],
+            "self-help": ["self-help"],
+            "travel": ["travel"],
+            "spirituality": ["spirituality"],
+            "military": ["military"],
+            "essays": ["essays"],
+            "mythology": ["mythology"],
+            "business": ["business"],
+            "anthology": ["anthology"],
+            "dystopia": ["dystopia"],
+            "education": ["education"],
+            "nature": ["nature"],
+            "health": ["health"],
+            "music": ["music"],
+            "food": ["food"]
+        };
+
+        const GENRE_ALIAS_MAP = (() => {
+            const map = new Map();
+            Object.entries(GENRE_ENUM).forEach(([key, aliases]) => {
+                aliases.forEach((alias) => {
+                    map.set(String(alias).toLowerCase(), key);
+                });
+            });
+            return map;
+        })();
+
+        const parseGenres = (value) => {
+            if (value === null || value === undefined) {
+                return [];
+            }
+            const text = String(value).trim();
+            if (!text || text.toLowerCase() === "null" || text.toLowerCase() === "undefined") {
+                return [];
+            }
+            const parts = text
+                .split(",")
+                .map((item) => item.trim().toLowerCase())
+                .filter(Boolean);
+            const mapped = [];
+            parts.forEach((part) => {
+                const key = GENRE_ALIAS_MAP.get(part);
+                if (key) {
+                    mapped.push(key);
+                }
+            });
+            const unique = Array.from(new Set(mapped));
+            unique.sort((a, b) => a.localeCompare(b));
+            return unique;
+        };
+
+        const parseTsvLine = (line) => {
+            const fields = [];
+            let current = "";
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i += 1) {
+                const char = line[i];
+                if (char === "\"") {
+                    const nextChar = line[i + 1];
+                    if (inQuotes && nextChar === "\"") {
+                        current += "\"";
+                        i += 1;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                    continue;
+                }
+                if (char === "\t" && !inQuotes) {
+                    fields.push(current);
+                    current = "";
+                    continue;
+                }
+                current += char;
+            }
+            fields.push(current);
+            return fields;
+        };
+
+        const getTitleRenderInfo = (row) => {
+            if (isValidUrl(row.url)) {
+                return { isLink: true, href: row.url };
+            }
+            return { isLink: false, href: "" };
+        };
+
+        const createTitleCell = (row) => {
+            const td = document.createElement("td");
+            const info = getTitleRenderInfo(row);
+            if (info.isLink) {
+                const link = document.createElement("a");
+                link.href = info.href;
+                link.textContent = row.title;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                td.appendChild(link);
+            } else {
+                td.textContent = row.title;
+            }
+            return td;
+        };
+
+        const createGenreCell = (genres) => {
+            const td = document.createElement("td");
+            if (genres && genres.length > 0) {
+                const list = document.createElement("div");
+                list.className = "genre-list";
+                genres.forEach((genre) => {
+                    const tag = document.createElement("span");
+                    tag.className = "genre-tag";
+                    tag.textContent = genre;
+                    list.appendChild(tag);
+                });
+                td.appendChild(list);
+            }
+            return td;
+        };
+
+        const createAuthorsCell = (authors) => {
+            const td = document.createElement("td");
+            const authorsList = authors.split(",").map((a) => a.trim()).filter((a) => a !== "");
+            if (authorsList.length > 0) {
+                const list = document.createElement("div");
+                list.className = "author-list";
+                authorsList.forEach((author) => {
+                    const tag = document.createElement("span");
+                    tag.className = "author-tag";
+                    tag.textContent = author;
+                    list.appendChild(tag);
+                });
+                td.appendChild(list);
+            }
+            return td;
+        };
+
+        const buildGenreFilterOptions = (genres) => {
+            genreFilterListEl.innerHTML = "";
+            const fragment = document.createDocumentFragment();
+            genres.forEach((genre) => {
+                const label = document.createElement("label");
+                label.className = "genre-option";
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.value = genre;
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(genre));
+                fragment.appendChild(label);
+            });
+            genreFilterListEl.appendChild(fragment);
+        };
+
+        const updateSelectedGenresFromUI = () => {
+            const selected = new Set();
+            const inputs = genreFilterListEl.querySelectorAll("input[type='checkbox']");
+            inputs.forEach((input) => {
+                if (input.checked) {
+                    selected.add(input.value);
+                }
+            });
+            selectedGenres = selected;
+        };
+
+        const setAllGenresChecked = (checked) => {
+            const inputs = genreFilterListEl.querySelectorAll("input[type='checkbox']");
+            inputs.forEach((input) => {
+                input.checked = checked;
+            });
+            selectedGenres = checked ? new Set(allGenres) : new Set();
+        };
+
+        const updateGenreCount = (totalCount) => {
+            genreCountEl.textContent = `已选 ${selectedGenres.size}，结果 ${totalCount.toLocaleString()} 条`;
+        };
+
+        const matchesGenreFilter = (row) => {
+            if (!selectedGenres || selectedGenres.size === 0) {
+                return true;
+            }
+            for (const genre of row.genres) {
+                if (selectedGenres.has(genre)) {
+                    return true;
+                }
+            }
+            return false;
         };
 
         const getRowHeight = () => {
@@ -445,15 +1343,32 @@
             if (filteredRows.length > 0) {
                 const sample = filteredRows[0];
                 const tempRow = document.createElement("tr");
-                const nameTd = document.createElement("td");
-                nameTd.textContent = sample.name;
+                const titleTd = document.createElement("td");
+                titleTd.textContent = sample.title;
+                const authorsTd = createAuthorsCell(sample.authors);
+                const genreTd = document.createElement("td");
+                if (sample.genres && sample.genres.length > 0) {
+                    const list = document.createElement("div");
+                    list.className = "genre-list";
+                    sample.genres.forEach((genre) => {
+                        const tag = document.createElement("span");
+                        tag.className = "genre-tag";
+                        tag.textContent = genre;
+                        list.appendChild(tag);
+                    });
+                    genreTd.appendChild(list);
+                }
+                const averageTd = document.createElement("td");
+                averageTd.textContent = sample.averageRatingText;
+                const ratingsTd = document.createElement("td");
+                ratingsTd.textContent = sample.ratingsCount.toLocaleString();
                 const totalTd = document.createElement("td");
                 totalTd.textContent = sample.totalWords.toLocaleString();
                 const p95Td = document.createElement("td");
                 p95Td.textContent = sample.cocaP95.toLocaleString();
                 const p98Td = document.createElement("td");
                 p98Td.textContent = sample.cocaP98.toLocaleString();
-                tempRow.append(nameTd, totalTd, p95Td, p98Td);
+                tempRow.append(titleTd, authorsTd, genreTd, averageTd, ratingsTd, totalTd, p95Td, p98Td);
                 tempRow.style.visibility = "hidden";
                 tableBody.appendChild(tempRow);
                 const height = tempRow.getBoundingClientRect().height || 44;
@@ -465,16 +1380,15 @@
 
         const computePageSizeValue = () => {
             const viewportHeight = window.innerHeight;
-            // const tableTop = tableEl.getBoundingClientRect().top;
-            const tableTop = 100;
-            const paginationHeight = paginationEl.getBoundingClientRect().height || 0;
-            const headHeight = tableHead.getBoundingClientRect().height || 0;
-            const buffer = 24;
-            const available = viewportHeight - tableTop - paginationHeight - headHeight - buffer;
-            const rowHeight = getRowHeight();
+            const paginationHeight = 80;
+            const headHeight = 60;
+            const buffer = 40;
+            const available = viewportHeight - paginationHeight - headHeight - buffer;
+            // 估算行高：基于类型字段平均 3 行标签，加上内边距
+            // 标签行高约 22px，间距 6px，3 行约 78px，加上上下内边距 24px，合计约 102px
+            const rowHeight = 102;
             const rows = Math.floor(available / rowHeight);
-            const safeRows = Math.max(1, rows);
-            return Math.min(safeRows, 50);
+            return Math.max(5, Math.min(rows, 50));
         };
 
         const updatePageSize = () => {
@@ -542,229 +1456,279 @@
             if (lines.length === 0) {
                 return [];
             }
-            const headers = lines[0].split("\t");
+            const headers = parseTsvLine(lines[0]);
             const getIndex = (key) => headers.indexOf(key);
-            const idxName = getIndex("name");
+            const idxTitle = getIndex("title");
+            const idxAuthors = getIndex("authors");
+            const idxRatings = getIndex("ratings_count");
+            const idxAverage = getIndex("average_rating");
             const idxTotal = getIndex("total_words");
             const idxP95 = getIndex("coca_p95");
             const idxP98 = getIndex("coca_p98");
-            if (idxName < 0 || idxTotal < 0 || idxP95 < 0 || idxP98 < 0) {
+            const idxCategory = getIndex("category");
+            const idxUrl = getIndex("url");
+            if (idxTitle < 0 || idxAuthors < 0 || idxRatings < 0 || idxAverage < 0 || idxTotal < 0 || idxP95 < 0 || idxP98 < 0 || idxCategory < 0 || idxUrl < 0) {
                 return [];
             }
             return lines.slice(1).map((line) => {
-                const parts = line.split("\t");
+                const parts = parseTsvLine(line);
+
+                const totalWords = toNumber(parts[idxTotal] ?? "");
+                const cocaP95 = toNumber(parts[idxP95] ?? "");
+                const cocaP98 = toNumber(parts[idxP98] ?? "");
+
+                if (totalWords === null || cocaP95 === null || cocaP98 === null) {
+                    return null;
+                }
+
+                const ratingsCount = Number(parts[idxRatings] ?? 0);
+                const averageRatingValue = Number(parts[idxAverage] ?? "");
+                const averageRating = Number.isFinite(averageRatingValue) ? averageRatingValue : null;
+                const categoryRaw = parts[idxCategory] ?? "";
                 return {
-                    name: cleanName(parts[idxName] ?? ""),
-                    totalWords: Number(parts[idxTotal] ?? 0),
-                    cocaP95: Number(parts[idxP95] ?? 0),
-                    cocaP98: Number(parts[idxP98] ?? 0)
+                    title: (parts[idxTitle] ?? "").trim(),
+                    authors: (parts[idxAuthors] ?? "").trim(),
+                    ratingsCount,
+                    averageRating,
+                    averageRatingText: parts[idxAverage] ?? "",
+                    totalWords,
+                    cocaP95,
+                    cocaP98,
+                    genres: parseGenres(categoryRaw),
+                    url: (parts[idxUrl] ?? "").trim(),
                 };
-            });
+            }).filter(item => item !== null);
         };
 
-        const applyFilter = () => {
-            const nameKeyword = nameFilterInput.value.trim().toLowerCase();
-            const p95Min = toNumber(p95MinInput.value);
-            const p95Max = toNumber(p95MaxInput.value);
-            const p98Min = toNumber(p98MinInput.value);
-            const p98Max = toNumber(p98MaxInput.value);
-            filteredRows = allRows.filter((row) => {
-                if (nameKeyword && !row.name.toLowerCase().includes(nameKeyword)) {
-                    return false;
-                }
-                if (p95Min !== null && row.cocaP95 < p95Min) {
-                    return false;
-                }
-                if (p95Max !== null && row.cocaP95 > p95Max) {
-                    return false;
-                }
-                if (p98Min !== null && row.cocaP98 < p98Min) {
-                    return false;
-                }
-                if (p98Max !== null && row.cocaP98 > p98Max) {
-                    return false;
-                }
-                return true;
-            });
-            currentPage = 1;
-            updatePageSize();
-            renderCurrentPage();
-        };
-
-        const renderTable = (rows, totalCount, totalPages) => {
+        const renderTable = () => {
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, filteredRows.length);
+            const pageData = filteredRows.slice(startIndex, endIndex);
             tableBody.innerHTML = "";
-            if (rows.length === 0) {
-                const emptyRow = document.createElement("tr");
-                const emptyCell = document.createElement("td");
-                emptyCell.colSpan = 4;
-                emptyCell.className = "empty-state";
-                emptyCell.textContent = "没有符合条件的数据";
-                emptyRow.appendChild(emptyCell);
-                tableBody.appendChild(emptyRow);
-                resultCountEl.textContent = "结果：0 条";
-                paginationInfoEl.textContent = "第 0 / 0 页";
-                prevPageBtn.disabled = true;
-                nextPageBtn.disabled = true;
-                pageJumpInput.disabled = true;
-                pageJumpBtn.disabled = true;
-                pageJumpInput.value = "";
-                return;
-            }
             const fragment = document.createDocumentFragment();
-            rows.forEach((row) => {
+            pageData.forEach((row) => {
                 const tr = document.createElement("tr");
-                const nameTd = document.createElement("td");
-                nameTd.textContent = row.name;
+                tr.appendChild(createTitleCell(row));
+                tr.appendChild(createAuthorsCell(row.authors));
+                tr.appendChild(createGenreCell(row.genres));
+                const averageTd = document.createElement("td");
+                averageTd.textContent = row.averageRatingText;
+                tr.appendChild(averageTd);
+                const ratingsTd = document.createElement("td");
+                ratingsTd.textContent = row.ratingsCount.toLocaleString();
+                tr.appendChild(ratingsTd);
                 const totalTd = document.createElement("td");
                 totalTd.textContent = row.totalWords.toLocaleString();
+                tr.appendChild(totalTd);
                 const p95Td = document.createElement("td");
                 p95Td.textContent = row.cocaP95.toLocaleString();
+                tr.appendChild(p95Td);
                 const p98Td = document.createElement("td");
                 p98Td.textContent = row.cocaP98.toLocaleString();
-                tr.append(nameTd, totalTd, p95Td, p98Td);
+                tr.appendChild(p98Td);
                 fragment.appendChild(tr);
             });
             tableBody.appendChild(fragment);
-            resultCountEl.textContent = `结果：${totalCount.toLocaleString()} 条`;
+            const totalPages = Math.ceil(filteredRows.length / pageSize) || 1;
             paginationInfoEl.textContent = `第 ${currentPage} / ${totalPages} 页`;
             prevPageBtn.disabled = currentPage <= 1;
             nextPageBtn.disabled = currentPage >= totalPages;
-            pageJumpInput.disabled = false;
-            pageJumpBtn.disabled = false;
+            resultCountEl.textContent = `结果：${filteredRows.length.toLocaleString()} 条`;
         };
 
-        const renderCurrentPage = () => {
-            const totalCount = filteredRows.length;
-            const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1);
-            currentPage = Math.min(currentPage, totalPages);
-            const start = (currentPage - 1) * pageSize;
-            const pageRows = filteredRows.slice(start, start + pageSize);
-            renderTable(pageRows, totalCount, totalPages);
-            pageJumpInput.max = totalPages;
-            pageJumpInput.value = currentPage;
-            pageJumpInput.placeholder = `1-${totalPages}`;
+        const applyFilters = () => {
+            const nameKeyword = nameFilterInput.value.trim().toLowerCase();
+            const authorKeyword = authorFilterInput.value.trim().toLowerCase();
+            const ratingMin = Number(ratingMinInput.value);
+            const ratingsCountMin = Number(ratingsCountMinInput.value);
+            const p95Min = Number(p95MinInput.value);
+            const p95Max = Number(p95MaxInput.value);
+            const p98Min = Number(p98MinInput.value);
+            const p98Max = Number(p98MaxInput.value);
+            filteredRows = allRows.filter((row) => {
+                if (nameKeyword && !row.title.toLowerCase().includes(nameKeyword)) return false;
+                if (authorKeyword && !row.authors.toLowerCase().includes(authorKeyword)) return false;
+                if (ratingMin > 0 && (row.averageRating === null || row.averageRating < ratingMin)) return false;
+                if (ratingsCountMin > 0 && row.ratingsCount < ratingsCountMin) return false;
+                if (p95Min > 0 && row.cocaP95 < p95Min) return false;
+                if (p95Max > 0 && row.cocaP95 > p95Max) return false;
+                if (p98Min > 0 && row.cocaP98 < p98Min) return false;
+                if (p98Max > 0 && row.cocaP98 > p98Max) return false;
+                if (!matchesGenreFilter(row)) return false;
+                return true;
+            });
+            sortRows();
+            updateSortUI();
+            updatePageSize();
+            updateGenreCount(filteredRows.length);
+            currentPage = 1;
+            renderTable();
         };
 
-        const updateRanges = () => {
-            if (allRows.length === 0) {
-                return;
-            }
-            const p95Values = allRows.map((row) => row.cocaP95);
-            const p98Values = allRows.map((row) => row.cocaP98);
-            const p95Min = Math.min(...p95Values);
-            const p95Max = Math.max(...p95Values);
-            const p98Min = Math.min(...p98Values);
-            const p98Max = Math.max(...p98Values);
-            p95Bounds = { min: p95Min, max: p95Max };
-            p98Bounds = { min: p98Min, max: p98Max };
-            p95MinInput.min = p95Min;
-            p95MinInput.max = p95Max;
-            p95MaxInput.min = p95Min;
-            p95MaxInput.max = p95Max;
-            p98MinInput.min = p98Min;
-            p98MinInput.max = p98Max;
-            p98MaxInput.min = p98Min;
-            p98MaxInput.max = p98Max;
-            p95MinRange.min = p95Min;
-            p95MinRange.max = p95Max;
-            p95MaxRange.min = p95Min;
-            p95MaxRange.max = p95Max;
-            p98MinRange.min = p98Min;
-            p98MinRange.max = p98Max;
-            p98MaxRange.min = p98Min;
-            p98MaxRange.max = p98Max;
-            p95MinRange.value = p95Min;
-            p95MaxRange.value = p95Max;
-            p98MinRange.value = p98Min;
-            p98MaxRange.value = p98Max;
-            p95MinInput.placeholder = `最小值 ${p95Min}`;
-            p95MaxInput.placeholder = `最大值 ${p95Max}`;
-            p98MinInput.placeholder = `最小值 ${p98Min}`;
-            p98MaxInput.placeholder = `最大值 ${p98Max}`;
-            updateRangeFill(p95MinRange, p95MaxRange, p95RangeFill, p95Bounds);
-            updateRangeFill(p98MinRange, p98MaxRange, p98RangeFill, p98Bounds);
-            updateRangeLabels();
-        };
-
-        const attachListeners = () => {
-            [nameFilterInput, p95MinInput, p95MaxInput, p98MinInput, p98MaxInput].forEach((input) => {
-                input.addEventListener("input", () => {
-                    syncRangesFromText();
-                    applyFilter();
-                });
-            });
-            [p95MinRange, p95MaxRange, p98MinRange, p98MaxRange].forEach((input) => {
-                input.addEventListener("input", () => {
-                    syncTextFromRanges();
-                    applyFilter();
-                });
-            });
-            prevPageBtn.addEventListener("click", () => {
-                if (currentPage > 1) {
-                    currentPage -= 1;
-                    renderCurrentPage();
+        const sortRows = () => {
+            const key = sortKey;
+            const dir = sortDir;
+            const multiplier = dir === "desc" ? -1 : 1;
+            filteredRows.sort((a, b) => {
+                const valA = a[key];
+                const valB = b[key];
+                if (valA === valB) return 0;
+                if (valA === null) return 1;
+                if (valB === null) return -1;
+                if (typeof valA === "string") {
+                    return valA.localeCompare(valB) * multiplier;
                 }
-            });
-            nextPageBtn.addEventListener("click", () => {
-                const totalPages = Math.max(Math.ceil(filteredRows.length / pageSize), 1);
-                if (currentPage < totalPages) {
-                    currentPage += 1;
-                    renderCurrentPage();
-                }
-            });
-            const jumpToInputPage = () => {
-                const totalPages = Math.max(Math.ceil(filteredRows.length / pageSize), 1);
-                const rawValue = Number(pageJumpInput.value);
-                if (!Number.isFinite(rawValue)) {
-                    pageJumpInput.value = currentPage;
-                    return;
-                }
-                const targetPage = clamp(Math.round(rawValue), 1, totalPages);
-                if (targetPage !== currentPage) {
-                    currentPage = targetPage;
-                    renderCurrentPage();
-                } else {
-                    pageJumpInput.value = currentPage;
-                }
-            };
-            pageJumpBtn.addEventListener("click", jumpToInputPage);
-            pageJumpInput.addEventListener("keydown", (event) => {
-                if (event.key === "Enter") {
-                    jumpToInputPage();
-                }
-            });
-            window.addEventListener("resize", () => {
-                updatePageSize();
-                renderCurrentPage();
+                return (valA - valB) * multiplier;
             });
         };
 
-        const loadData = async () => {
+        const initRanges = () => {
+            if (allRows.length === 0) return;
+            const p95Values = allRows.map((r) => r.cocaP95);
+            const p98Values = allRows.map((r) => r.cocaP98);
+            p95Bounds.min = Math.min(...p95Values);
+            p95Bounds.max = Math.max(...p95Values);
+            p98Bounds.min = Math.min(...p98Values);
+            p98Bounds.max = Math.max(...p98Values);
+            p95MinRange.min = p95Bounds.min;
+            p95MinRange.max = p95Bounds.max;
+            p95MaxRange.min = p95Bounds.min;
+            p95MaxRange.max = p95Bounds.max;
+            p98MinRange.min = p98Bounds.min;
+            p98MinRange.max = p98Bounds.max;
+            p98MaxRange.min = p98Bounds.min;
+            p98MaxRange.max = p98Bounds.max;
+            p95MinRange.value = p95Bounds.min;
+            p95MaxRange.value = p95Bounds.max;
+            p98MinRange.value = p98Bounds.min;
+            p98MaxRange.value = p98Bounds.max;
+            syncTextFromRanges();
+        };
+
+        const initGenres = () => {
+            const genres = new Set();
+            allRows.forEach((row) => {
+                row.genres.forEach((g) => genres.add(g));
+            });
+            allGenres = Array.from(genres);
+            allGenres.sort((a, b) => a.localeCompare(b));
+            buildGenreFilterOptions(allGenres);
+        };
+
+        const fetchData = async () => {
             try {
                 const response = await fetch(dataUrl);
                 if (!response.ok) {
-                    throw new Error(`数据读取失败: ${response.status}`);
+                    throw new Error("Network response was not ok");
                 }
                 const text = await response.text();
                 allRows = parseTsv(text);
-                if (allRows.length === 0) {
-                    statusEl.textContent = "数据为空或列名不匹配";
-                    renderTable([]);
-                    return;
-                }
-                statusEl.textContent = `数据加载完成：${allRows.length} 条`;
-                updateRanges();
-                attachListeners();
-                applyFilter();
+                initRanges();
+                initGenres();
+                statusEl.style.display = "none";
+                applyFilters();
             } catch (error) {
-                statusEl.textContent = error.message;
-                filteredRows = [];
-                currentPage = 1;
-                renderTable([], 0, 0);
+                statusEl.textContent = "加载数据失败，请检查文件是否存在。";
+                console.error("Error loading data:", error);
             }
         };
 
-        loadData();
+        nameFilterInput.addEventListener("input", applyFilters);
+        authorFilterInput.addEventListener("input", applyFilters);
+        ratingMinInput.addEventListener("input", applyFilters);
+        ratingsCountMinInput.addEventListener("input", applyFilters);
+        p95MinInput.addEventListener("change", () => { syncRangesFromText(); applyFilters(); });
+        p95MaxInput.addEventListener("change", () => { syncRangesFromText(); applyFilters(); });
+        p98MinInput.addEventListener("change", () => { syncRangesFromText(); applyFilters(); });
+        p98MaxInput.addEventListener("change", () => { syncRangesFromText(); applyFilters(); });
+        p95MinRange.addEventListener("input", () => { syncTextFromRanges(); applyFilters(); });
+        p95MaxRange.addEventListener("input", () => { syncTextFromRanges(); applyFilters(); });
+        p98MinRange.addEventListener("input", () => { syncTextFromRanges(); applyFilters(); });
+        p98MaxRange.addEventListener("input", () => { syncTextFromRanges(); applyFilters(); });
+        
+        // sortSelect.addEventListener("change", ...); // Removed
+
+        // Header click sorting
+        const sortableHeaders = document.querySelectorAll("th.sortable");
+        sortableHeaders.forEach(th => {
+            th.addEventListener("click", () => {
+                const key = th.dataset.sort;
+                if (sortKey === key) {
+                    sortDir = sortDir === "desc" ? "asc" : "desc";
+                } else {
+                    sortKey = key;
+                    // Default sort direction for text is asc, numbers is desc
+                    if (key === "title" || key === "authors") {
+                        sortDir = "asc";
+                    } else {
+                        sortDir = "desc";
+                    }
+                }
+                updateSortUI();
+                sortRows();
+                currentPage = 1;
+                renderTable();
+            });
+        });
+
+        prevPageBtn.addEventListener("click", () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+            }
+        });
+        nextPageBtn.addEventListener("click", () => {
+            const totalPages = Math.ceil(filteredRows.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable();
+            }
+        });
+        pageJumpBtn.addEventListener("click", () => {
+            const page = parseInt(pageJumpInput.value, 10);
+            const totalPages = Math.ceil(filteredRows.length / pageSize);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                renderTable();
+            }
+        });
+        genreSelectAllBtn.addEventListener("click", () => {
+            setAllGenresChecked(true);
+            updateSelectedGenresFromUI();
+            applyFilters();
+        });
+        genreClearBtn.addEventListener("click", () => {
+            setAllGenresChecked(false);
+            updateSelectedGenresFromUI();
+            applyFilters();
+        });
+        genreFilterListEl.addEventListener("change", (e) => {
+            if (e.target.tagName === "INPUT" && e.target.type === "checkbox") {
+                updateSelectedGenresFromUI();
+                applyFilters();
+            }
+        });
+
+        document.addEventListener("keydown", (e) => {
+            const activeEl = document.activeElement;
+            if (activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA")) {
+                return;
+            }
+            if (e.key === "ArrowLeft") {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable();
+                }
+            } else if (e.key === "ArrowRight") {
+                const totalPages = Math.ceil(filteredRows.length / pageSize);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTable();
+                }
+            }
+        });
+
+        fetchData();
     </script>
 </body>
 </html>
