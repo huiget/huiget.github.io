@@ -815,8 +815,8 @@ tbody td {
 }
 /* 为不同列设置宽度 */
 table th:nth-child(1), table td:nth-child(1) { width: 35%; } /* 书名 */
-table th:nth-child(2), table td:nth-child(2) { width: 25%; } /* 作者 */
-table th:nth-child(3), table td:nth-child(3) { width: 15%; } /* 类型 */
+table th:nth-child(2), table td:nth-child(2) { width: 20%; } /* 作者 */
+table th:nth-child(3), table td:nth-child(3) { width: 20%; } /* 类型 */
 table th:nth-child(4), table td:nth-child(4) { width: 80px; } /* 评分 */
 table th:nth-child(5), table td:nth-child(5) { width: 100px; } /* 评分人数 */
 table th:nth-child(6), table td:nth-child(6) { width: 100px; } /* 总字数 */
@@ -1093,6 +1093,37 @@ th.sortable.desc::after {
         let currentPage = 1;
         let sortKey = "averageRating";
         let sortDir = "desc";
+
+        const STORAGE_KEY = "english_sweet_spot_filters";
+
+        const saveFilters = () => {
+            const filters = {
+                name: nameFilterInput.value,
+                author: authorFilterInput.value,
+                ratingMin: ratingMinInput.value,
+                ratingsCountMin: ratingsCountMinInput.value,
+                p95Min: p95MinInput.value,
+                p95Max: p95MaxInput.value,
+                p98Min: p98MinInput.value,
+                p98Max: p98MaxInput.value,
+                selectedGenres: Array.from(selectedGenres),
+                sortKey,
+                sortDir,
+                currentPage
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+        };
+
+        const loadFilters = () => {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (!saved) return null;
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.error("Error parsing saved filters:", e);
+                return null;
+            }
+        };
 
         const updateSortUI = () => {
             const ths = tableHead.querySelectorAll("th.sortable");
@@ -1539,7 +1570,7 @@ th.sortable.desc::after {
             resultCountEl.textContent = `结果：${filteredRows.length.toLocaleString()} 条`;
         };
 
-        const applyFilters = () => {
+        const applyFilters = (isInitialLoad = false) => {
             const nameKeyword = nameFilterInput.value.trim().toLowerCase();
             const authorKeyword = authorFilterInput.value.trim().toLowerCase();
             const ratingMin = Number(ratingMinInput.value);
@@ -1563,8 +1594,11 @@ th.sortable.desc::after {
             sortRows();
             updateSortUI();
             updateGenreCount(filteredRows.length);
-            currentPage = 1;
+            if (!isInitialLoad) {
+                currentPage = 1;
+            }
             renderTable();
+            saveFilters();
         };
 
         const sortRows = () => {
@@ -1582,6 +1616,7 @@ th.sortable.desc::after {
                 }
                 return (valA - valB) * multiplier;
             });
+            saveFilters();
         };
 
         const initRanges = () => {
@@ -1600,11 +1635,22 @@ th.sortable.desc::after {
             p98MinRange.max = p98Bounds.max;
             p98MaxRange.min = p98Bounds.min;
             p98MaxRange.max = p98Bounds.max;
-            p95MinRange.value = p95Bounds.min;
-            p95MaxRange.value = p95Bounds.max;
-            p98MinRange.value = p98Bounds.min;
-            p98MaxRange.value = p98Bounds.max;
-            syncTextFromRanges();
+            
+            // 尝试恢复保存的范围值
+            const saved = loadFilters();
+            if (saved) {
+                p95MinInput.value = saved.p95Min ?? p95Bounds.min;
+                p95MaxInput.value = saved.p95Max ?? p95Bounds.max;
+                p98MinInput.value = saved.p98Min ?? p98Bounds.min;
+                p98MaxInput.value = saved.p98Max ?? p98Bounds.max;
+                syncRangesFromText();
+            } else {
+                p95MinRange.value = p95Bounds.min;
+                p95MaxRange.value = p95Bounds.max;
+                p98MinRange.value = p98Bounds.min;
+                p98MaxRange.value = p98Bounds.max;
+                syncTextFromRanges();
+            }
         };
 
         const initGenres = () => {
@@ -1615,6 +1661,17 @@ th.sortable.desc::after {
             allGenres = Array.from(genres);
             allGenres.sort((a, b) => a.localeCompare(b));
             buildGenreFilterOptions(allGenres);
+            
+            // 尝试恢复保存的类型选择
+            const saved = loadFilters();
+            if (saved && saved.selectedGenres) {
+                const savedGenres = new Set(saved.selectedGenres);
+                const inputs = genreFilterListEl.querySelectorAll("input[type='checkbox']");
+                inputs.forEach(input => {
+                    input.checked = savedGenres.has(input.value);
+                });
+                selectedGenres = savedGenres;
+            }
         };
 
         const fetchData = async () => {
@@ -1625,10 +1682,23 @@ th.sortable.desc::after {
                 }
                 const text = await response.text();
                 allRows = parseTsv(text);
+                
+                // 恢复基本过滤项
+                const saved = loadFilters();
+                if (saved) {
+                    nameFilterInput.value = saved.name || "";
+                    authorFilterInput.value = saved.author || "";
+                    ratingMinInput.value = saved.ratingMin || "";
+                    ratingsCountMinInput.value = saved.ratingsCountMin || "";
+                    sortKey = saved.sortKey || sortKey;
+                    sortDir = saved.sortDir || sortDir;
+                    currentPage = saved.currentPage || 1;
+                }
+
                 initRanges();
                 initGenres();
                 statusEl.style.display = "none";
-                applyFilters();
+                applyFilters(true);
             } catch (error) {
                 statusEl.textContent = "加载数据失败，请检查文件是否存在。";
                 console.error("Error loading data:", error);
@@ -1677,6 +1747,7 @@ th.sortable.desc::after {
             if (currentPage > 1) {
                 currentPage--;
                 renderTable();
+                saveFilters();
             }
         });
         nextPageBtn.addEventListener("click", () => {
@@ -1684,6 +1755,7 @@ th.sortable.desc::after {
             if (currentPage < totalPages) {
                 currentPage++;
                 renderTable();
+                saveFilters();
             }
         });
         pageJumpBtn.addEventListener("click", () => {
@@ -1692,6 +1764,7 @@ th.sortable.desc::after {
             if (page >= 1 && page <= totalPages) {
                 currentPage = page;
                 renderTable();
+                saveFilters();
             }
         });
         genreSelectAllBtn.addEventListener("click", () => {
