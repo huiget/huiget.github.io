@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英文甜区</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: radial-gradient(circle at top, #e6f0ff, #f7f8fc 45%, #ffffff 100%);
+            color: #0f172a;
+            padding: 36px 20px 56px;
+        }
+
+        .container {
+            max-width: 1140px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .hero {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #475569;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            backdrop-filter: blur(6px);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: stretch;
+            text-align: left;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+            align-items: start;
+        }
+
+        .filter-group {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
+
+        .filter-group label {
+            font-size: 13px;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        .filter-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .filter-inputs.single {
+            grid-template-columns: 1fr;
+        }
+
+        .range-slider {
+            position: relative;
+            height: 26px;
+            display: flex;
+            align-items: center;
+        }
+
+        .range-track {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 999px;
+        }
+
+        .range-fill {
+            position: absolute;
+            height: 6px;
+            background: linear-gradient(90deg, #6366f1, #38bdf8);
+            border-radius: 999px;
+        }
+
+        .range-slider input[type="range"] {
+            position: absolute;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: 26px;
+            background: transparent;
+            pointer-events: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .range-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 3px solid #6366f1;
+            background: #ffffff;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .range-slider input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 3px solid #6366f1;
+            background: #ffffff;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #cbd5f5;
+            border-radius: 10px;
+            font-size: 14px;
+            background: #f8fbff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1px solid #cbd5f5;
+            border-radius: 10px;
+            font-size: 14px;
+            background: #f8fbff;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="number"]:focus,
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+            background: #ffffff;
+        }
+
+        input::placeholder {
+            color: #94a3b8;
+        }
+
+        .status {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #4338ca;
+            font-size: 12px;
+            font-weight: 600;
+            align-self: flex-start;
+            margin-bottom: 6px;
+        }
+
+        .pagination {
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .pagination button {
+            border: 1px solid #cbd5f5;
+            background: #ffffff;
+            color: #4338ca;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
+        }
+
+        .pagination button:disabled {
+            color: #94a3b8;
+            border-color: #e2e8f0;
+            cursor: not-allowed;
+            background: #f8fafc;
+        }
+
+        .page-jump {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .page-jump input[type="number"] {
+            width: 76px;
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+        }
+
+        thead th {
+            text-align: left;
+            font-size: 13px;
+            color: #64748b;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+        }
+
+        thead th:nth-child(2),
+        tbody td:nth-child(2) {
+            width: 80px;
+        }
+
+        thead th:nth-child(3),
+        tbody td:nth-child(3) {
+            width: 60px;
+        }
+
+        thead th:nth-child(4),
+        tbody td:nth-child(4) {
+            width: 60px;
+        }
+
+        tbody td {
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px 0;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>英文甜区</h1>
+            <div class="subtitle">基于 COCA 词频分位点筛选书籍</div>
+        </div>
+        <div class="card filter-card">
+            <div class="filter-group">
+                <label>书名</label>
+                <div class="filter-inputs single">
+                    <input id="name-filter" type="text" placeholder="输入关键词">
+                </div>
+            </div>
+            <div class="filters">
+                <div class="filter-group">
+                    <label>COCA P95 分位点</label>
+                    <div class="filter-inputs">
+                        <input id="p95-min" type="number" placeholder="最小值">
+                        <input id="p95-max" type="number" placeholder="最大值">
+                    </div>
+                    <div class="range-slider">
+                        <div class="range-track"></div>
+                        <div class="range-fill" id="p95-range-fill"></div>
+                        <input id="p95-min-range" type="range">
+                        <input id="p95-max-range" type="range">
+                    </div>
+                    <div class="range-labels">
+                        <span id="p95-range-min-label">最小值</span>
+                        <span id="p95-range-max-label">最大值</span>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>COCA P98 分位点</label>
+                    <div class="filter-inputs">
+                        <input id="p98-min" type="number" placeholder="最小值">
+                        <input id="p98-max" type="number" placeholder="最大值">
+                    </div>
+                    <div class="range-slider">
+                        <div class="range-track"></div>
+                        <div class="range-fill" id="p98-range-fill"></div>
+                        <input id="p98-min-range" type="range">
+                        <input id="p98-max-range" type="range">
+                    </div>
+                    <div class="range-labels">
+                        <span id="p98-range-min-label">最小值</span>
+                        <span id="p98-range-max-label">最大值</span>
+                    </div>
+                </div>
+            </div>
+            <div class="status" id="status">正在加载数据...</div>
+        </div>
+        <div class="card result-card">
+            <div class="badge" id="result-count">结果：0 条</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>书名</th>
+                        <th>总字数</th>
+                        <th>P95</th>
+                        <th>P98</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+            <div class="pagination">
+                <div class="pagination-info" id="pagination-info">第 1 / 1 页</div>
+                <div class="pagination-controls">
+                    <button id="prev-page" type="button">上一页</button>
+                    <button id="next-page" type="button">下一页</button>
+                    <div class="page-jump">
+                        <input id="page-jump-input" type="number" min="1" placeholder="页码">
+                        <button id="page-jump-btn" type="button">跳转</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dataUrl = "./stats_dir_full_filterd.csv";
+        const statusEl = document.getElementById("status");
+        const resultCountEl = document.getElementById("result-count");
+        const tableBody = document.getElementById("table-body");
+        const paginationInfoEl = document.getElementById("pagination-info");
+        const prevPageBtn = document.getElementById("prev-page");
+        const nextPageBtn = document.getElementById("next-page");
+        const pageJumpInput = document.getElementById("page-jump-input");
+        const pageJumpBtn = document.getElementById("page-jump-btn");
+        const nameFilterInput = document.getElementById("name-filter");
+        const p95MinInput = document.getElementById("p95-min");
+        const p95MaxInput = document.getElementById("p95-max");
+        const p98MinInput = document.getElementById("p98-min");
+        const p98MaxInput = document.getElementById("p98-max");
+        const p95MinRange = document.getElementById("p95-min-range");
+        const p95MaxRange = document.getElementById("p95-max-range");
+        const p98MinRange = document.getElementById("p98-min-range");
+        const p98MaxRange = document.getElementById("p98-max-range");
+        const p95RangeMinLabel = document.getElementById("p95-range-min-label");
+        const p95RangeMaxLabel = document.getElementById("p95-range-max-label");
+        const p98RangeMinLabel = document.getElementById("p98-range-min-label");
+        const p98RangeMaxLabel = document.getElementById("p98-range-max-label");
+        const p95RangeFill = document.getElementById("p95-range-fill");
+        const p98RangeFill = document.getElementById("p98-range-fill");
+        let allRows = [];
+        let filteredRows = [];
+        let p95Bounds = { min: 0, max: 0 };
+        let p98Bounds = { min: 0, max: 0 };
+        const resultCard = document.querySelector(".result-card");
+        const tableEl = resultCard.querySelector("table");
+        const tableHead = tableEl.querySelector("thead");
+        const paginationEl = resultCard.querySelector(".pagination");
+        let pageSize = 15;
+        let currentPage = 1;
+
+        const toNumber = (value) => {
+            const trimmed = value.trim();
+            if (!trimmed) {
+                return null;
+            }
+            const num = Number(trimmed);
+            return Number.isFinite(num) ? num : null;
+        };
+
+        const cleanName = (value) => value.replace(/\.epub\.txt$/i, "");
+        const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+        const normalizeRanges = (minRangeEl, maxRangeEl) => {
+            const minValue = Number(minRangeEl.value);
+            const maxValue = Number(maxRangeEl.value);
+            if (minValue > maxValue) {
+                maxRangeEl.value = minValue;
+            }
+        };
+
+        const getRowHeight = () => {
+            const firstRow = tableBody.querySelector("tr");
+            if (firstRow) {
+                const rect = firstRow.getBoundingClientRect();
+                if (rect.height > 0) {
+                    return rect.height;
+                }
+            }
+            if (filteredRows.length > 0) {
+                const sample = filteredRows[0];
+                const tempRow = document.createElement("tr");
+                const nameTd = document.createElement("td");
+                nameTd.textContent = sample.name;
+                const totalTd = document.createElement("td");
+                totalTd.textContent = sample.totalWords.toLocaleString();
+                const p95Td = document.createElement("td");
+                p95Td.textContent = sample.cocaP95.toLocaleString();
+                const p98Td = document.createElement("td");
+                p98Td.textContent = sample.cocaP98.toLocaleString();
+                tempRow.append(nameTd, totalTd, p95Td, p98Td);
+                tempRow.style.visibility = "hidden";
+                tableBody.appendChild(tempRow);
+                const height = tempRow.getBoundingClientRect().height || 44;
+                tableBody.removeChild(tempRow);
+                return height;
+            }
+            return 44;
+        };
+
+        const computePageSizeValue = () => {
+            const viewportHeight = window.innerHeight;
+            // const tableTop = tableEl.getBoundingClientRect().top;
+            const tableTop = 100;
+            const paginationHeight = paginationEl.getBoundingClientRect().height || 0;
+            const headHeight = tableHead.getBoundingClientRect().height || 0;
+            const buffer = 24;
+            const available = viewportHeight - tableTop - paginationHeight - headHeight - buffer;
+            const rowHeight = getRowHeight();
+            const rows = Math.floor(available / rowHeight);
+            const safeRows = Math.max(1, rows);
+            return Math.min(safeRows, 50);
+        };
+
+        const updatePageSize = () => {
+            if (filteredRows.length === 0) {
+                return;
+            }
+            const newSize = computePageSizeValue();
+            if (!Number.isFinite(newSize) || newSize <= 0) {
+                return;
+            }
+            if (newSize !== pageSize) {
+                const currentIndex = (currentPage - 1) * pageSize;
+                pageSize = newSize;
+                currentPage = Math.floor(currentIndex / pageSize) + 1;
+            }
+        };
+
+        const updateRangeFill = (minRangeEl, maxRangeEl, fillEl, bounds) => {
+            const minValue = Number(minRangeEl.value);
+            const maxValue = Number(maxRangeEl.value);
+            const span = Math.max(bounds.max - bounds.min, 1);
+            const left = ((minValue - bounds.min) / span) * 100;
+            const right = ((maxValue - bounds.min) / span) * 100;
+            fillEl.style.left = `${left}%`;
+            fillEl.style.width = `${Math.max(right - left, 0)}%`;
+        };
+
+        const updateRangeLabels = () => {
+            p95RangeMinLabel.textContent = Number(p95MinRange.value).toLocaleString();
+            p95RangeMaxLabel.textContent = Number(p95MaxRange.value).toLocaleString();
+            p98RangeMinLabel.textContent = Number(p98MinRange.value).toLocaleString();
+            p98RangeMaxLabel.textContent = Number(p98MaxRange.value).toLocaleString();
+        };
+
+        const syncTextFromRanges = () => {
+            normalizeRanges(p95MinRange, p95MaxRange);
+            normalizeRanges(p98MinRange, p98MaxRange);
+            p95MinInput.value = p95MinRange.value;
+            p95MaxInput.value = p95MaxRange.value;
+            p98MinInput.value = p98MinRange.value;
+            p98MaxInput.value = p98MaxRange.value;
+            updateRangeFill(p95MinRange, p95MaxRange, p95RangeFill, p95Bounds);
+            updateRangeFill(p98MinRange, p98MaxRange, p98RangeFill, p98Bounds);
+            updateRangeLabels();
+        };
+
+        const syncRangesFromText = () => {
+            const p95MinValue = toNumber(p95MinInput.value);
+            const p95MaxValue = toNumber(p95MaxInput.value);
+            const p98MinValue = toNumber(p98MinInput.value);
+            const p98MaxValue = toNumber(p98MaxInput.value);
+            p95MinRange.value = p95MinValue === null ? p95Bounds.min : clamp(p95MinValue, p95Bounds.min, p95Bounds.max);
+            p95MaxRange.value = p95MaxValue === null ? p95Bounds.max : clamp(p95MaxValue, p95Bounds.min, p95Bounds.max);
+            p98MinRange.value = p98MinValue === null ? p98Bounds.min : clamp(p98MinValue, p98Bounds.min, p98Bounds.max);
+            p98MaxRange.value = p98MaxValue === null ? p98Bounds.max : clamp(p98MaxValue, p98Bounds.min, p98Bounds.max);
+            normalizeRanges(p95MinRange, p95MaxRange);
+            normalizeRanges(p98MinRange, p98MaxRange);
+            updateRangeFill(p95MinRange, p95MaxRange, p95RangeFill, p95Bounds);
+            updateRangeFill(p98MinRange, p98MaxRange, p98RangeFill, p98Bounds);
+            updateRangeLabels();
+        };
+
+        const parseTsv = (text) => {
+            const lines = text.trim().split(/\r?\n/);
+            if (lines.length === 0) {
+                return [];
+            }
+            const headers = lines[0].split("\t");
+            const getIndex = (key) => headers.indexOf(key);
+            const idxName = getIndex("name");
+            const idxTotal = getIndex("total_words");
+            const idxP95 = getIndex("coca_p95");
+            const idxP98 = getIndex("coca_p98");
+            if (idxName < 0 || idxTotal < 0 || idxP95 < 0 || idxP98 < 0) {
+                return [];
+            }
+            return lines.slice(1).map((line) => {
+                const parts = line.split("\t");
+                return {
+                    name: cleanName(parts[idxName] ?? ""),
+                    totalWords: Number(parts[idxTotal] ?? 0),
+                    cocaP95: Number(parts[idxP95] ?? 0),
+                    cocaP98: Number(parts[idxP98] ?? 0)
+                };
+            });
+        };
+
+        const applyFilter = () => {
+            const nameKeyword = nameFilterInput.value.trim().toLowerCase();
+            const p95Min = toNumber(p95MinInput.value);
+            const p95Max = toNumber(p95MaxInput.value);
+            const p98Min = toNumber(p98MinInput.value);
+            const p98Max = toNumber(p98MaxInput.value);
+            filteredRows = allRows.filter((row) => {
+                if (nameKeyword && !row.name.toLowerCase().includes(nameKeyword)) {
+                    return false;
+                }
+                if (p95Min !== null && row.cocaP95 < p95Min) {
+                    return false;
+                }
+                if (p95Max !== null && row.cocaP95 > p95Max) {
+                    return false;
+                }
+                if (p98Min !== null && row.cocaP98 < p98Min) {
+                    return false;
+                }
+                if (p98Max !== null && row.cocaP98 > p98Max) {
+                    return false;
+                }
+                return true;
+            });
+            currentPage = 1;
+            updatePageSize();
+            renderCurrentPage();
+        };
+
+        const renderTable = (rows, totalCount, totalPages) => {
+            tableBody.innerHTML = "";
+            if (rows.length === 0) {
+                const emptyRow = document.createElement("tr");
+                const emptyCell = document.createElement("td");
+                emptyCell.colSpan = 4;
+                emptyCell.className = "empty-state";
+                emptyCell.textContent = "没有符合条件的数据";
+                emptyRow.appendChild(emptyCell);
+                tableBody.appendChild(emptyRow);
+                resultCountEl.textContent = "结果：0 条";
+                paginationInfoEl.textContent = "第 0 / 0 页";
+                prevPageBtn.disabled = true;
+                nextPageBtn.disabled = true;
+                pageJumpInput.disabled = true;
+                pageJumpBtn.disabled = true;
+                pageJumpInput.value = "";
+                return;
+            }
+            const fragment = document.createDocumentFragment();
+            rows.forEach((row) => {
+                const tr = document.createElement("tr");
+                const nameTd = document.createElement("td");
+                nameTd.textContent = row.name;
+                const totalTd = document.createElement("td");
+                totalTd.textContent = row.totalWords.toLocaleString();
+                const p95Td = document.createElement("td");
+                p95Td.textContent = row.cocaP95.toLocaleString();
+                const p98Td = document.createElement("td");
+                p98Td.textContent = row.cocaP98.toLocaleString();
+                tr.append(nameTd, totalTd, p95Td, p98Td);
+                fragment.appendChild(tr);
+            });
+            tableBody.appendChild(fragment);
+            resultCountEl.textContent = `结果：${totalCount.toLocaleString()} 条`;
+            paginationInfoEl.textContent = `第 ${currentPage} / ${totalPages} 页`;
+            prevPageBtn.disabled = currentPage <= 1;
+            nextPageBtn.disabled = currentPage >= totalPages;
+            pageJumpInput.disabled = false;
+            pageJumpBtn.disabled = false;
+        };
+
+        const renderCurrentPage = () => {
+            const totalCount = filteredRows.length;
+            const totalPages = Math.max(Math.ceil(totalCount / pageSize), 1);
+            currentPage = Math.min(currentPage, totalPages);
+            const start = (currentPage - 1) * pageSize;
+            const pageRows = filteredRows.slice(start, start + pageSize);
+            renderTable(pageRows, totalCount, totalPages);
+            pageJumpInput.max = totalPages;
+            pageJumpInput.value = currentPage;
+            pageJumpInput.placeholder = `1-${totalPages}`;
+        };
+
+        const updateRanges = () => {
+            if (allRows.length === 0) {
+                return;
+            }
+            const p95Values = allRows.map((row) => row.cocaP95);
+            const p98Values = allRows.map((row) => row.cocaP98);
+            const p95Min = Math.min(...p95Values);
+            const p95Max = Math.max(...p95Values);
+            const p98Min = Math.min(...p98Values);
+            const p98Max = Math.max(...p98Values);
+            p95Bounds = { min: p95Min, max: p95Max };
+            p98Bounds = { min: p98Min, max: p98Max };
+            p95MinInput.min = p95Min;
+            p95MinInput.max = p95Max;
+            p95MaxInput.min = p95Min;
+            p95MaxInput.max = p95Max;
+            p98MinInput.min = p98Min;
+            p98MinInput.max = p98Max;
+            p98MaxInput.min = p98Min;
+            p98MaxInput.max = p98Max;
+            p95MinRange.min = p95Min;
+            p95MinRange.max = p95Max;
+            p95MaxRange.min = p95Min;
+            p95MaxRange.max = p95Max;
+            p98MinRange.min = p98Min;
+            p98MinRange.max = p98Max;
+            p98MaxRange.min = p98Min;
+            p98MaxRange.max = p98Max;
+            p95MinRange.value = p95Min;
+            p95MaxRange.value = p95Max;
+            p98MinRange.value = p98Min;
+            p98MaxRange.value = p98Max;
+            p95MinInput.placeholder = `最小值 ${p95Min}`;
+            p95MaxInput.placeholder = `最大值 ${p95Max}`;
+            p98MinInput.placeholder = `最小值 ${p98Min}`;
+            p98MaxInput.placeholder = `最大值 ${p98Max}`;
+            updateRangeFill(p95MinRange, p95MaxRange, p95RangeFill, p95Bounds);
+            updateRangeFill(p98MinRange, p98MaxRange, p98RangeFill, p98Bounds);
+            updateRangeLabels();
+        };
+
+        const attachListeners = () => {
+            [nameFilterInput, p95MinInput, p95MaxInput, p98MinInput, p98MaxInput].forEach((input) => {
+                input.addEventListener("input", () => {
+                    syncRangesFromText();
+                    applyFilter();
+                });
+            });
+            [p95MinRange, p95MaxRange, p98MinRange, p98MaxRange].forEach((input) => {
+                input.addEventListener("input", () => {
+                    syncTextFromRanges();
+                    applyFilter();
+                });
+            });
+            prevPageBtn.addEventListener("click", () => {
+                if (currentPage > 1) {
+                    currentPage -= 1;
+                    renderCurrentPage();
+                }
+            });
+            nextPageBtn.addEventListener("click", () => {
+                const totalPages = Math.max(Math.ceil(filteredRows.length / pageSize), 1);
+                if (currentPage < totalPages) {
+                    currentPage += 1;
+                    renderCurrentPage();
+                }
+            });
+            const jumpToInputPage = () => {
+                const totalPages = Math.max(Math.ceil(filteredRows.length / pageSize), 1);
+                const rawValue = Number(pageJumpInput.value);
+                if (!Number.isFinite(rawValue)) {
+                    pageJumpInput.value = currentPage;
+                    return;
+                }
+                const targetPage = clamp(Math.round(rawValue), 1, totalPages);
+                if (targetPage !== currentPage) {
+                    currentPage = targetPage;
+                    renderCurrentPage();
+                } else {
+                    pageJumpInput.value = currentPage;
+                }
+            };
+            pageJumpBtn.addEventListener("click", jumpToInputPage);
+            pageJumpInput.addEventListener("keydown", (event) => {
+                if (event.key === "Enter") {
+                    jumpToInputPage();
+                }
+            });
+            window.addEventListener("resize", () => {
+                updatePageSize();
+                renderCurrentPage();
+            });
+        };
+
+        const loadData = async () => {
+            try {
+                const response = await fetch(dataUrl);
+                if (!response.ok) {
+                    throw new Error(`数据读取失败: ${response.status}`);
+                }
+                const text = await response.text();
+                allRows = parseTsv(text);
+                if (allRows.length === 0) {
+                    statusEl.textContent = "数据为空或列名不匹配";
+                    renderTable([]);
+                    return;
+                }
+                statusEl.textContent = `数据加载完成：${allRows.length} 条`;
+                updateRanges();
+                attachListeners();
+                applyFilter();
+            } catch (error) {
+                statusEl.textContent = error.message;
+                filteredRows = [];
+                currentPage = 1;
+                renderTable([], 0, 0);
+            }
+        };
+
+        loadData();
+    </script>
+</body>
+</html>
