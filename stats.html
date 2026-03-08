@@ -783,6 +783,7 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 0;
+    table-layout: fixed; /* 关键改动：固定布局 */
 }
 thead th {
     text-align: left;
@@ -794,6 +795,12 @@ thead th {
     white-space: nowrap;
     background-color: #f8f8f8;
     vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: sticky; /* 关键改动：固定表头 */
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 1px 0 #cccccc; /* 增加底部投影，使其在滚动时更有边界感 */
 }
 tbody td {
     padding: 12px;
@@ -802,7 +809,19 @@ tbody td {
     vertical-align: middle;
     color: #333333;
     line-height: 1.5;
+    word-break: break-all; /* 防止长文本撑开固定列宽 */
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
+/* 为不同列设置宽度 */
+table th:nth-child(1), table td:nth-child(1) { width: 35%; } /* 书名 */
+table th:nth-child(2), table td:nth-child(2) { width: 25%; } /* 作者 */
+table th:nth-child(3), table td:nth-child(3) { width: 15%; } /* 类型 */
+table th:nth-child(4), table td:nth-child(4) { width: 80px; } /* 评分 */
+table th:nth-child(5), table td:nth-child(5) { width: 100px; } /* 评分人数 */
+table th:nth-child(6), table td:nth-child(6) { width: 100px; } /* 总字数 */
+table th:nth-child(7), table td:nth-child(7) { width: 80px; } /* P95 */
+table th:nth-child(8), table td:nth-child(8) { width: 80px; } /* P98 */
 tbody tr:hover td {
     background-color: #f8f8f8;
 }
@@ -863,8 +882,8 @@ a:hover {
 th.sortable {
     cursor: pointer;
     user-select: none;
-    position: relative;
     padding-right: 20px;
+    /* 移除 position: relative; 避免覆盖 sticky */
 }
 th.sortable:hover {
     background-color: #cccccc;
@@ -1070,7 +1089,7 @@ th.sortable.desc::after {
         const tableEl = resultCard.querySelector("table");
         const tableHead = tableEl.querySelector("thead");
         const paginationEl = resultCard.querySelector(".pagination");
-        let pageSize = 15;
+        const pageSize = 50; // 固定每页显示 50 条
         let currentPage = 1;
         let sortKey = "averageRating";
         let sortDir = "desc";
@@ -1378,34 +1397,6 @@ th.sortable.desc::after {
             return 44;
         };
 
-        const computePageSizeValue = () => {
-            const viewportHeight = window.innerHeight;
-            const paginationHeight = 80;
-            const headHeight = 60;
-            const buffer = 40;
-            const available = viewportHeight - paginationHeight - headHeight - buffer;
-            // 估算行高：基于类型字段平均 3 行标签，加上内边距
-            // 标签行高约 22px，间距 6px，3 行约 78px，加上上下内边距 24px，合计约 102px
-            const rowHeight = 102;
-            const rows = Math.floor(available / rowHeight);
-            return Math.max(5, Math.min(rows, 50));
-        };
-
-        const updatePageSize = () => {
-            if (filteredRows.length === 0) {
-                return;
-            }
-            const newSize = computePageSizeValue();
-            if (!Number.isFinite(newSize) || newSize <= 0) {
-                return;
-            }
-            if (newSize !== pageSize) {
-                const currentIndex = (currentPage - 1) * pageSize;
-                pageSize = newSize;
-                currentPage = Math.floor(currentIndex / pageSize) + 1;
-            }
-        };
-
         const updateRangeFill = (minRangeEl, maxRangeEl, fillEl, bounds) => {
             const minValue = Number(minRangeEl.value);
             const maxValue = Number(maxRangeEl.value);
@@ -1529,6 +1520,18 @@ th.sortable.desc::after {
                 fragment.appendChild(tr);
             });
             tableBody.appendChild(fragment);
+
+            // 翻页后滚动到表头
+            const tableRect = tableEl.getBoundingClientRect();
+            // 考虑表头高度和 sticky 偏移
+            const headerOffset = 60; 
+            if (tableRect.top < headerOffset) {
+                window.scrollTo({
+                    top: window.scrollY + tableRect.top - headerOffset,
+                    behavior: "auto" // 使用 auto 以快速定位，或者 smooth 平滑滚动
+                });
+            }
+
             const totalPages = Math.ceil(filteredRows.length / pageSize) || 1;
             paginationInfoEl.textContent = `第 ${currentPage} / ${totalPages} 页`;
             prevPageBtn.disabled = currentPage <= 1;
@@ -1559,7 +1562,6 @@ th.sortable.desc::after {
             });
             sortRows();
             updateSortUI();
-            updatePageSize();
             updateGenreCount(filteredRows.length);
             currentPage = 1;
             renderTable();
