@@ -908,6 +908,35 @@ th.sortable.desc::after {
     border-top: 6px solid #2c3e50;
     opacity: 1;
 }
+
+.filter-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+}
+.reset-all-btn {
+    background-color: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.reset-all-btn:hover {
+    background-color: #fee2e2;
+    border-color: #fca5a5;
+    box-shadow: 0 1px 2px rgba(220, 38, 38, 0.1);
+}
+.reset-all-btn:active {
+    background-color: #fecaca;
+}
     </style>
 </head>
 <body>
@@ -976,8 +1005,8 @@ th.sortable.desc::after {
                     <div class="filter-group">
                         <label>COCA P95 分位点</label>
                         <div class="filter-inputs">
-                            <input id="p95-min" type="number" placeholder="最小值">
-                            <input id="p95-max" type="number" placeholder="最大值">
+                            <input id="p95-min" type="number" step="100" placeholder="最小值">
+                            <input id="p95-max" type="number" step="100" placeholder="最大值">
                         </div>
                         <div class="range-slider">
                             <div class="range-track"></div>
@@ -995,8 +1024,8 @@ th.sortable.desc::after {
                     <div class="filter-group">
                         <label>COCA P98 分位点</label>
                         <div class="filter-inputs">
-                            <input id="p98-min" type="number" placeholder="最小值">
-                            <input id="p98-max" type="number" placeholder="最大值">
+                            <input id="p98-min" type="number" step="100" placeholder="最小值">
+                            <input id="p98-max" type="number" step="100" placeholder="最大值">
                         </div>
                         <div class="range-slider">
                             <div class="range-track"></div>
@@ -1011,7 +1040,13 @@ th.sortable.desc::after {
                     </div>
                 </div>
             </div>
-            <div class="status" id="status">正在加载数据...</div>
+            <div class="filter-footer">
+                <div class="status" id="status">正在加载数据...</div>
+                <button id="reset-all-btn" class="reset-all-btn" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                    重置所有筛选
+                </button>
+            </div>
         </div>
         <div class="card result-card">
             <div class="result-header">
@@ -1078,6 +1113,7 @@ th.sortable.desc::after {
         const p98RangeMaxLabel = document.getElementById("p98-range-max-label");
         const p95RangeFill = document.getElementById("p95-range-fill");
         const p98RangeFill = document.getElementById("p98-range-fill");
+        const resetAllBtn = document.getElementById("reset-all-btn");
         // const sortSelect = document.getElementById("sort-select"); // Removed
         let allRows = [];
         let filteredRows = [];
@@ -1109,7 +1145,8 @@ th.sortable.desc::after {
                 selectedGenres: Array.from(selectedGenres),
                 sortKey,
                 sortDir,
-                currentPage
+                currentPage,
+                timestamp: Date.now() // 记录保存时间
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
         };
@@ -1118,7 +1155,14 @@ th.sortable.desc::after {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (!saved) return null;
             try {
-                return JSON.parse(saved);
+                const filters = JSON.parse(saved);
+                const THREE_MINUTES = 3 * 60 * 1000;
+                // 如果保存时间超过 3 分钟，则视为过期
+                if (Date.now() - (filters.timestamp || 0) > THREE_MINUTES) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    return null;
+                }
+                return filters;
             } catch (e) {
                 console.error("Error parsing saved filters:", e);
                 return null;
@@ -1496,12 +1540,16 @@ th.sortable.desc::after {
                 const parts = parseTsvLine(line);
 
                 const totalWords = toNumber(parts[idxTotal] ?? "");
-                const cocaP95 = toNumber(parts[idxP95] ?? "");
-                const cocaP98 = toNumber(parts[idxP98] ?? "");
+                let cocaP95 = toNumber(parts[idxP95] ?? "");
+                let cocaP98 = toNumber(parts[idxP98] ?? "");
 
                 if (totalWords === null || cocaP95 === null || cocaP98 === null) {
                     return null;
                 }
+
+                // 四舍五入到最近的整百数
+                cocaP95 = Math.round(cocaP95 / 100) * 100;
+                cocaP98 = Math.round(cocaP98 / 100) * 100;
 
                 const ratingsCount = Number(parts[idxRatings] ?? 0);
                 const averageRatingValue = Number(parts[idxAverage] ?? "");
@@ -1629,12 +1677,16 @@ th.sortable.desc::after {
             p98Bounds.max = Math.max(...p98Values);
             p95MinRange.min = p95Bounds.min;
             p95MinRange.max = p95Bounds.max;
+            p95MinRange.step = 100;
             p95MaxRange.min = p95Bounds.min;
             p95MaxRange.max = p95Bounds.max;
+            p95MaxRange.step = 100;
             p98MinRange.min = p98Bounds.min;
             p98MinRange.max = p98Bounds.max;
+            p98MinRange.step = 100;
             p98MaxRange.min = p98Bounds.min;
             p98MaxRange.max = p98Bounds.max;
+            p98MaxRange.step = 100;
             
             // 尝试恢复保存的范围值
             const saved = loadFilters();
@@ -1782,6 +1834,41 @@ th.sortable.desc::after {
                 updateSelectedGenresFromUI();
                 applyFilters();
             }
+        });
+
+        resetAllBtn.addEventListener("click", () => {
+            // 1. 清空所有文本和数字输入
+            nameFilterInput.value = "";
+            authorFilterInput.value = "";
+            ratingMinInput.value = "";
+            ratingsCountMinInput.value = "";
+            p95MinInput.value = "";
+            p95MaxInput.value = "";
+            p98MinInput.value = "";
+            p98MaxInput.value = "";
+
+            // 2. 重置类型选择
+            setAllGenresChecked(false);
+            updateSelectedGenresFromUI();
+
+            // 3. 重置范围滑动条到默认边界
+            p95MinRange.value = p95Bounds.min;
+            p95MaxRange.value = p95Bounds.max;
+            p98MinRange.value = p98Bounds.min;
+            p98MaxRange.value = p98Bounds.max;
+            syncTextFromRanges();
+
+            // 4. 重置排序和页码
+            sortKey = "averageRating";
+            sortDir = "desc";
+            currentPage = 1;
+
+            // 5. 清除本地存储
+            localStorage.removeItem(STORAGE_KEY);
+
+            // 6. 重新应用过滤并更新 UI
+            applyFilters();
+            updateSortUI();
         });
 
         document.addEventListener("keydown", (e) => {
