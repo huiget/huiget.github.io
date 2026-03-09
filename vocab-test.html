@@ -208,6 +208,13 @@
             box-shadow: 0 6px 20px rgba(247, 151, 30, 0.4);
         }
 
+        .uncertain-hint {
+            text-align: center;
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 10px;
+        }
+
         /* Results UI */
         .results-container {
             display: none;
@@ -364,6 +371,7 @@
                 <button class="btn btn-uncertain" id="btnUncertain">不确定</button>
                 <button class="btn btn-unknown" id="btnUnknown">不认识</button>
             </div>
+            <div class="uncertain-hint">眼熟但说不出意思的单词请选不认识</div>
 
             <div class="keyboard-hints">
                 按 <kbd>←</kbd> 或 <kbd>Y</kbd> 认识，<kbd>↓</kbd> 或 <kbd>M</kbd> 不确定，<kbd>→</kbd> 或 <kbd>N</kbd> 不认识
