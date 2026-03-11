@@ -374,6 +374,19 @@
             margin-left: -1.3em;
         }
 
+        .mobile-warning {
+            display: none;
+            background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+            color: #856404;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: left;
+            border: 1px solid #FEF3C7;
+            line-height: 1.5;
+        }
+
         @media print {
             html {
                 font-size: 13px;
@@ -1001,30 +1014,24 @@
         /* 类型 */
         table th:nth-child(4),
         table td:nth-child(4) {
-            width: 80px;
+            width: 100px;
         }
 
-        /* 评分 */
+        /* 评分人数 */
         table th:nth-child(5),
         table td:nth-child(5) {
             width: 100px;
         }
 
-        /* 评分人数 */
+        /* 总字数 */
         table th:nth-child(6),
         table td:nth-child(6) {
-            width: 100px;
-        }
-
-        /* 总字数 */
-        table th:nth-child(7),
-        table td:nth-child(7) {
             width: 80px;
         }
 
         /* P95 */
-        table th:nth-child(8),
-        table td:nth-child(8) {
+        table th:nth-child(7),
+        table td:nth-child(7) {
             width: 80px;
         }
 
@@ -1632,6 +1639,137 @@
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             margin: 0 2px;
         }
+
+        @media (max-width: 768px) {
+            .mobile-warning {
+                display: block;
+            }
+
+            #genre-filters-container,
+            #percentile-filters-container,
+            #ratings-count-filter-panel {
+                display: none !important;
+            }
+
+            /* Hide Type (3rd), Rating Count (4th), Total Words (5th), P95 (6th), P98 (7th) columns */
+            table th:nth-child(3),
+            table td:nth-child(3),
+            table th:nth-child(4),
+            table td:nth-child(4),
+            table th:nth-child(5),
+            table td:nth-child(5),
+            table th:nth-child(6),
+            table td:nth-child(6),
+            table th:nth-child(7),
+            table td:nth-child(7) {
+                display: none;
+            }
+
+            /* Override column widths for mobile */
+            table th:nth-child(1),
+            table td:nth-child(1) {
+                width: 70%;
+                word-break: normal;
+                overflow-wrap: break-word;
+            }
+
+            table th:nth-child(2),
+            table td:nth-child(2) {
+                width: 40%;
+                /* word-break: normal; */
+                /* overflow-wrap: break-word; */
+            }
+
+            /* Vocabulary Test Mobile Optimization */
+            #vocab-test-embed {
+                padding: 12px; /* Reduce padding to save space */
+                margin: 10px 0;
+            }
+
+            #vocab-test-embed .vocab-container {
+                max-width: 100%;
+            }
+
+            #vocab-test-embed h1 {
+                font-size: 1.5em; /* Smaller title */
+                margin-bottom: 5px;
+                margin-top: 0.5rem; /* Reduce top margin */
+            }
+
+            #vocab-test-embed .subtitle {
+                font-size: 0.85em;
+                margin-bottom: 15px; /* Reduce space below subtitle */
+            }
+
+            #vocab-test-embed .close-btn {
+                top: -8px; /* Move up to corner */
+                right: -8px; /* Move right to corner */
+                font-size: 24px;
+                padding: 10px; /* Ensure touch target is still accessible */
+            }
+
+            #vocab-test-embed .progress-panel {
+                padding: 10px;
+                margin-bottom: 15px; /* Reduce space */
+            }
+
+            #vocab-test-embed .progress-row {
+                margin-bottom: 5px; /* Compact rows */
+            }
+
+            #vocab-test-embed .current-word {
+                font-size: 2em; /* Smaller word */
+            }
+
+            #vocab-test-embed .word-display {
+                padding-top: 10px; /* Reduce padding */
+                margin-bottom: 10px;
+            }
+
+            #vocab-test-embed .btn {
+                padding: 10px 5px; /* Smaller buttons */
+                font-size: 0.9em;
+            }
+
+            #vocab-test-embed .result-number {
+                font-size: 2.5em;
+            }
+            
+            #vocab-test-embed .loading {
+                 padding: 20px;
+            }
+
+            /* Hide keyboard hints on mobile */
+            #vocab-test-embed .keyboard-hints {
+                display: none;
+            }
+
+            /* Optimize progress panel layout */
+            #vocab-test-embed .progress-label {
+                white-space: nowrap;
+                font-size: 0.8em;
+            }
+
+            #vocab-test-embed .progress-value {
+                font-size: 0.85em;
+                text-align: right;
+                word-break: break-all; 
+            }
+            
+            /* Fix confidence labels overlapping */
+            #vocab-test-embed .confidence-labels span {
+                font-size: 9px;
+                transform: scale(0.85); /* Slightly smaller scale */
+                letter-spacing: -0.5px; /* Tighten text */
+                transform-origin: center bottom;
+            }
+
+            /* Prevent instruction text wrapping if possible, or center nicely */
+            #vocab-test-embed .uncertain-hint {
+                padding: 0 10px;
+                line-height: 1.4;
+            }
+        }
     </style>
 </head>
 
@@ -1639,6 +1777,7 @@
     <div class="container">
         <div class="hero">
             <h1>英文甜区</h1>
+            <div class="mobile-warning">屏幕过小，删除了 80% 内容，请在电脑上访问获得完整信息。</div>
             <div>
                 <p>TIME 中文解读版总主笔旋元佑认为，广泛阅读是中国英语学习者最佳的进阶之路。二语习得泰斗 Krashen 也主张，为了乐趣而读，是比单纯背单词更高效的学习方式。</p>
 
@@ -1778,7 +1917,7 @@
                     </div>
                 </div>
             </div>
-            <div class="filters">
+            <div class="filters" id="percentile-filters-container">
                 <div class="filter-panel">
                     <span class="filter-badge"></span>
                     <div class="filter-group">
@@ -1851,20 +1990,7 @@
                 </div>
             </div>
             <div class="filters">
-                <div class="filter-panel">
-                    <span class="filter-badge"></span>
-                    <div class="filter-group">
-                        <label>评分</label>
-                        <div class="filter-inputs single">
-                            <div class="input-wrapper">
-                                <input id="rating-min" type="number" step="0.1" placeholder="最小值">
-                                <button id="rating-clear-btn" class="clear-btn" type="button"
-                                    title="清空按钮">&times;</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="filter-panel">
+                <div class="filter-panel" id="ratings-count-filter-panel">
                     <span class="filter-badge"></span>
                     <div class="filter-group">
                         <label>评分人数</label>
@@ -1878,7 +2004,7 @@
                     </div>
                 </div>
             </div>
-            <div class="filters">
+            <div class="filters" id="genre-filters-container">
                 <div class="filter-panel">
                     <span class="filter-badge"></span>
                     <div class="filter-group">
@@ -1914,7 +2040,6 @@
                         <th class="sortable" data-sort="title">书名</th>
                         <th class="sortable" data-sort="authors">作者</th>
                         <th>类型</th>
-                        <th class="sortable" data-sort="averageRating">评分</th>
                         <th class="sortable" data-sort="ratingsCount">评分人数</th>
                         <th class="sortable" data-sort="totalWords">总字数</th>
                         <th class="sortable tooltip-cell" data-sort="cocaP95"><span class="tooltip-target"
@@ -1951,11 +2076,9 @@
         const pageJumpBtn = document.getElementById("page-jump-btn");
         const nameFilterInput = document.getElementById("name-filter");
         const authorFilterInput = document.getElementById("author-filter");
-        const ratingMinInput = document.getElementById("rating-min");
         const ratingsCountMinInput = document.getElementById("ratings-count-min");
         const nameClearBtn = document.getElementById("name-clear-btn");
         const authorClearBtn = document.getElementById("author-clear-btn");
-        const ratingClearBtn = document.getElementById("rating-clear-btn");
         const ratingsCountClearBtn = document.getElementById("ratings-count-clear-btn");
         const genreFilterListEl = document.getElementById("genre-filter-list");
         const genreSelectAllBtn = document.getElementById("genre-select-all");
@@ -1990,7 +2113,6 @@
         const vocabPanel = vocabFilterInput.closest(".filter-panel");
         const namePanel = nameFilterInput.closest(".filter-panel");
         const authorPanel = authorFilterInput.closest(".filter-panel");
-        const ratingPanel = ratingMinInput.closest(".filter-panel");
         const ratingsCountPanel = ratingsCountMinInput.closest(".filter-panel");
 
         const updateFilterStatus = () => {
@@ -2014,9 +2136,6 @@
 
             // Author
             setPanelStatus(authorPanel, authorFilterInput.value.trim() !== "");
-
-            // Rating
-            setPanelStatus(ratingPanel, ratingMinInput.value.trim() !== "");
 
             // Ratings Count
             setPanelStatus(ratingsCountPanel, ratingsCountMinInput.value.trim() !== "");
@@ -2049,7 +2168,7 @@
         const paginationEl = resultCard.querySelector(".pagination");
         const pageSize = 50; // 固定每页显示 50 条
         let currentPage = 1;
-        let sortKey = "averageRating";
+        let sortKey = "ratingsCount";
         let sortDir = "desc";
 
         let vocabDebounceTimer;
@@ -2066,7 +2185,6 @@
             const filters = {
                 name: nameFilterInput.value,
                 author: authorFilterInput.value,
-                ratingMin: ratingMinInput.value,
                 ratingsCountMin: ratingsCountMinInput.value,
                 p95Min: p95MinInput.value,
                 p95Max: p95MaxInput.value,
@@ -2590,9 +2708,6 @@
                 tr.appendChild(createTitleCell(row));
                 tr.appendChild(createAuthorsCell(row.authors));
                 tr.appendChild(createGenreCell(row.genres));
-                const averageTd = document.createElement("td");
-                averageTd.textContent = row.averageRating !== null ? row.averageRating.toFixed(2) : (row.averageRatingText || "");
-                tr.appendChild(averageTd);
                 const ratingsTd = document.createElement("td");
                 ratingsTd.textContent = formatLargeNumber(row.ratingsCount);
                 tr.appendChild(ratingsTd);
@@ -2630,15 +2745,12 @@
         const applyFilters = (isInitialLoad = false) => {
             const nameKeyword = nameFilterInput.value.trim().toLowerCase();
             const authorKeyword = authorFilterInput.value.trim().toLowerCase();
-            const ratingMinStr = ratingMinInput.value.trim();
             const ratingsCountMinStr = ratingsCountMinInput.value.trim();
-            const ratingMin = Number(ratingMinStr);
             const ratingsCountMin = Number(ratingsCountMinStr);
 
             // Toggle clear buttons
             nameClearBtn.style.display = nameKeyword !== "" ? "block" : "none";
             authorClearBtn.style.display = authorKeyword !== "" ? "block" : "none";
-            ratingClearBtn.style.display = ratingMinStr !== "" ? "block" : "none";
             ratingsCountClearBtn.style.display = ratingsCountMinStr !== "" ? "block" : "none";
 
             // Vocab filter logic
@@ -2672,7 +2784,6 @@
             filteredRows = allRows.filter((row) => {
                 if (nameKeyword && !row.title.toLowerCase().includes(nameKeyword)) return false;
                 if (authorKeyword && !row.authors.toLowerCase().includes(authorKeyword)) return false;
-                if (ratingMin > 0 && (row.averageRating === null || row.averageRating < ratingMin)) return false;
                 if (ratingsCountMin > 0 && row.ratingsCount < ratingsCountMin) return false;
 
                 if (isVocabActive) {
@@ -2796,7 +2907,6 @@
                 if (saved) {
                     nameFilterInput.value = saved.name || "";
                     authorFilterInput.value = saved.author || "";
-                    ratingMinInput.value = saved.ratingMin || "";
                     ratingsCountMinInput.value = saved.ratingsCountMin !== undefined ? saved.ratingsCountMin : "30";
                     vocabFilterInput.value = saved.vocab || "";
                     sortKey = saved.sortKey || sortKey;
@@ -2818,7 +2928,6 @@
 
         nameFilterInput.addEventListener("input", applyFilters);
         authorFilterInput.addEventListener("input", applyFilters);
-        ratingMinInput.addEventListener("input", applyFilters);
         ratingsCountMinInput.addEventListener("input", applyFilters);
 
         // Vocab filter events
@@ -2838,11 +2947,6 @@
 
         authorClearBtn.addEventListener("click", () => {
             authorFilterInput.value = "";
-            applyFilters();
-        });
-
-        ratingClearBtn.addEventListener("click", () => {
-            ratingMinInput.value = "";
             applyFilters();
         });
 
@@ -2930,7 +3034,6 @@
             // 1. 清空所有文本和数字输入
             nameFilterInput.value = "";
             authorFilterInput.value = "";
-            ratingMinInput.value = "";
             ratingsCountMinInput.value = "";
             p95MinInput.value = "";
             p95MaxInput.value = "";
@@ -2950,7 +3053,7 @@
             syncTextFromRanges();
 
             // 4. 重置排序和页码
-            sortKey = "averageRating";
+            sortKey = "ratingsCount";
             sortDir = "desc";
             currentPage = 1;
 
