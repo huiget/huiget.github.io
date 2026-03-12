@@ -1006,16 +1006,16 @@
             width: 20%;
         }
 
-        /* 作者 */
+        /* 类型 */
         table th:nth-child(3),
         table td:nth-child(3) {
             width: 20%;
         }
 
-        /* 类型 */
+        /* 评分 */
         table th:nth-child(4),
         table td:nth-child(4) {
-            width: 100px;
+            width: 80px;
         }
 
         /* 评分人数 */
@@ -1027,7 +1027,7 @@
         /* 总字数 */
         table th:nth-child(6),
         table td:nth-child(6) {
-            width: 80px;
+            width: 100px;
         }
 
         /* P95 */
@@ -1037,6 +1037,10 @@
         }
 
         /* P98 */
+        table th:nth-child(8),
+        table td:nth-child(8) {
+            width: 80px;
+        }
         tbody tr:hover td {
             background-color: #f8f8f8;
         }
@@ -1648,11 +1652,12 @@
 
             #genre-filters-container,
             #percentile-filters-container,
+            #rating-filter-panel,
             #ratings-count-filter-panel {
                 display: none !important;
             }
 
-            /* Hide Type (3rd), Rating Count (4th), Total Words (5th), P95 (6th), P98 (7th) columns */
+            /* Hide everything except Title (1st) and Author (2nd) on mobile */
             table th:nth-child(3),
             table td:nth-child(3),
             table th:nth-child(4),
@@ -1662,7 +1667,9 @@
             table th:nth-child(6),
             table td:nth-child(6),
             table th:nth-child(7),
-            table td:nth-child(7) {
+            table td:nth-child(7),
+            table th:nth-child(8),
+            table td:nth-child(8) {
                 display: none;
             }
 
@@ -1991,6 +1998,19 @@
                 </div>
             </div>
             <div class="filters">
+                <div class="filter-panel" id="rating-filter-panel">
+                    <span class="filter-badge"></span>
+                    <div class="filter-group">
+                        <label>评分</label>
+                        <div class="filter-inputs single">
+                            <div class="input-wrapper">
+                                <input id="rating-min" type="number" step="0.1" placeholder="最小值">
+                                <button id="rating-clear-btn" class="clear-btn" type="button"
+                                    title="清空按钮">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="filter-panel" id="ratings-count-filter-panel">
                     <span class="filter-badge"></span>
                     <div class="filter-group">
@@ -2018,6 +2038,18 @@
                         <div class="genre-filter-list" id="genre-filter-list"></div>
                     </div>
                 </div>
+                <div class="filter-panel">
+                    <span class="filter-badge"></span>
+                    <div class="filter-group">
+                        <label>排除类型</label>
+                        <div class="filter-actions">
+                            <button id="excluded-genre-select-all" type="button">全选</button>
+                            <button id="excluded-genre-clear" type="button">清空</button>
+                            <span class="genre-count" id="excluded-genre-count">已排除 0</span>
+                        </div>
+                        <div class="genre-filter-list" id="excluded-genre-filter-list"></div>
+                    </div>
+                </div>
             </div>
             <div class="filter-footer">
                 <div class="status" id="status">正在加载数据...</div>
@@ -2041,6 +2073,7 @@
                         <th class="sortable" data-sort="title">书名</th>
                         <th class="sortable" data-sort="authors">作者</th>
                         <th>类型</th>
+                        <th class="sortable" data-sort="averageRating">评分</th>
                         <th class="sortable" data-sort="ratingsCount">评分人数</th>
                         <th class="sortable" data-sort="totalWords">总字数</th>
                         <th class="sortable tooltip-cell" data-sort="cocaP95"><span class="tooltip-target"
@@ -2077,14 +2110,20 @@
         const pageJumpBtn = document.getElementById("page-jump-btn");
         const nameFilterInput = document.getElementById("name-filter");
         const authorFilterInput = document.getElementById("author-filter");
+        const ratingMinInput = document.getElementById("rating-min");
         const ratingsCountMinInput = document.getElementById("ratings-count-min");
         const nameClearBtn = document.getElementById("name-clear-btn");
         const authorClearBtn = document.getElementById("author-clear-btn");
+        const ratingClearBtn = document.getElementById("rating-clear-btn");
         const ratingsCountClearBtn = document.getElementById("ratings-count-clear-btn");
         const genreFilterListEl = document.getElementById("genre-filter-list");
         const genreSelectAllBtn = document.getElementById("genre-select-all");
         const genreClearBtn = document.getElementById("genre-clear");
         const genreCountEl = document.getElementById("genre-count");
+        const excludedGenreFilterListEl = document.getElementById("excluded-genre-filter-list");
+        const excludedGenreSelectAllBtn = document.getElementById("excluded-genre-select-all");
+        const excludedGenreClearBtn = document.getElementById("excluded-genre-clear");
+        const excludedGenreCountEl = document.getElementById("excluded-genre-count");
         const p95MinInput = document.getElementById("p95-min");
         const p95MaxInput = document.getElementById("p95-max");
         const p98MinInput = document.getElementById("p98-min");
@@ -2111,9 +2150,11 @@
         const p95Panel = p95MinInput.closest(".filter-panel");
         const p98Panel = p98MinInput.closest(".filter-panel");
         const genrePanel = genreFilterListEl.closest(".filter-panel");
+        const excludedGenrePanel = excludedGenreFilterListEl.closest(".filter-panel");
         const vocabPanel = vocabFilterInput.closest(".filter-panel");
         const namePanel = nameFilterInput.closest(".filter-panel");
         const authorPanel = authorFilterInput.closest(".filter-panel");
+        const ratingPanel = ratingMinInput.closest(".filter-panel");
         const ratingsCountPanel = ratingsCountMinInput.closest(".filter-panel");
 
         const updateFilterStatus = () => {
@@ -2138,11 +2179,17 @@
             // Author
             setPanelStatus(authorPanel, authorFilterInput.value.trim() !== "");
 
+            // Rating
+            setPanelStatus(ratingPanel, ratingMinInput.value.trim() !== "");
+
             // Ratings Count
             setPanelStatus(ratingsCountPanel, ratingsCountMinInput.value.trim() !== "");
 
             // Genre
             setPanelStatus(genrePanel, selectedGenres.size > 0, selectedGenres.size);
+
+            // Excluded Genre
+            setPanelStatus(excludedGenrePanel, excludedGenres.size > 0, excludedGenres.size);
 
             // P95
             const isP95Active = !p95Panel.classList.contains("disabled") && p95Bounds &&
@@ -2161,6 +2208,7 @@
         let filteredRows = [];
         let allGenres = [];
         let selectedGenres = new Set();
+        let excludedGenres = new Set();
         let p95Bounds = { min: 0, max: 0 };
         let p98Bounds = { min: 0, max: 0 };
         const resultCard = document.querySelector(".result-card");
@@ -2169,7 +2217,7 @@
         const paginationEl = resultCard.querySelector(".pagination");
         const pageSize = 50; // 固定每页显示 50 条
         let currentPage = 1;
-        let sortKey = "ratingsCount";
+        let sortKey = "averageRating";
         let sortDir = "desc";
 
         let vocabDebounceTimer;
@@ -2186,6 +2234,7 @@
             const filters = {
                 name: nameFilterInput.value,
                 author: authorFilterInput.value,
+                ratingMin: ratingMinInput.value,
                 ratingsCountMin: ratingsCountMinInput.value,
                 p95Min: p95MinInput.value,
                 p95Max: p95MaxInput.value,
@@ -2193,6 +2242,7 @@
                 p98Max: p98MaxInput.value,
                 vocab: vocabFilterInput.value,
                 selectedGenres: Array.from(selectedGenres),
+                excludedGenres: Array.from(excludedGenres),
                 sortKey,
                 sortDir,
                 currentPage,
@@ -2533,7 +2583,69 @@
             genreCountEl.textContent = `已选 ${selectedGenres.size}，结果 ${totalCount} 条`;
         };
 
+        const buildExcludedGenreFilterOptions = (genres) => {
+            excludedGenreFilterListEl.innerHTML = "";
+            const fragment = document.createDocumentFragment();
+            genres.forEach((genre) => {
+                const label = document.createElement("label");
+                label.className = "genre-option";
+                if (excludedGenres.has(genre)) {
+                    label.classList.add("selected");
+                }
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.value = genre;
+                checkbox.checked = excludedGenres.has(genre);
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(genre));
+                fragment.appendChild(label);
+            });
+            excludedGenreFilterListEl.appendChild(fragment);
+        };
+
+        const updateExcludedGenresFromUI = () => {
+            const selected = new Set();
+            const inputs = excludedGenreFilterListEl.querySelectorAll("input[type='checkbox']");
+            inputs.forEach((input) => {
+                const label = input.closest(".genre-option");
+                if (input.checked) {
+                    selected.add(input.value);
+                    label.classList.add("selected");
+                } else {
+                    label.classList.remove("selected");
+                }
+            });
+            excludedGenres = selected;
+        };
+
+        const setAllExcludedGenresChecked = (checked) => {
+            const inputs = excludedGenreFilterListEl.querySelectorAll("input[type='checkbox']");
+            inputs.forEach((input) => {
+                input.checked = checked;
+                const label = input.closest(".genre-option");
+                if (checked) {
+                    label.classList.add("selected");
+                } else {
+                    label.classList.remove("selected");
+                }
+            });
+            excludedGenres = checked ? new Set(allGenres) : new Set();
+        };
+
+        const updateExcludedGenreCount = () => {
+            excludedGenreCountEl.textContent = `已排除 ${excludedGenres.size}`;
+        };
+
         const matchesGenreFilter = (row) => {
+            // Exclusion check
+            if (excludedGenres && excludedGenres.size > 0) {
+                for (const genre of row.genres) {
+                    if (excludedGenres.has(genre)) {
+                        return false;
+                    }
+                }
+            }
+
             if (!selectedGenres || selectedGenres.size === 0) {
                 return true;
             }
@@ -2709,6 +2821,9 @@
                 tr.appendChild(createTitleCell(row));
                 tr.appendChild(createAuthorsCell(row.authors));
                 tr.appendChild(createGenreCell(row.genres));
+                const averageTd = document.createElement("td");
+                averageTd.textContent = row.averageRating !== null ? row.averageRating.toFixed(2) : (row.averageRatingText || "");
+                tr.appendChild(averageTd);
                 const ratingsTd = document.createElement("td");
                 ratingsTd.textContent = formatLargeNumber(row.ratingsCount);
                 tr.appendChild(ratingsTd);
@@ -2746,12 +2861,15 @@
         const applyFilters = (isInitialLoad = false) => {
             const nameKeyword = nameFilterInput.value.trim().toLowerCase();
             const authorKeyword = authorFilterInput.value.trim().toLowerCase();
+            const ratingMinStr = ratingMinInput.value.trim();
             const ratingsCountMinStr = ratingsCountMinInput.value.trim();
+            const ratingMin = Number(ratingMinStr);
             const ratingsCountMin = Number(ratingsCountMinStr);
 
             // Toggle clear buttons
             nameClearBtn.style.display = nameKeyword !== "" ? "block" : "none";
             authorClearBtn.style.display = authorKeyword !== "" ? "block" : "none";
+            ratingClearBtn.style.display = ratingMinStr !== "" ? "block" : "none";
             ratingsCountClearBtn.style.display = ratingsCountMinStr !== "" ? "block" : "none";
 
             // Vocab filter logic
@@ -2785,6 +2903,7 @@
             filteredRows = allRows.filter((row) => {
                 if (nameKeyword && !row.title.toLowerCase().includes(nameKeyword)) return false;
                 if (authorKeyword && !row.authors.toLowerCase().includes(authorKeyword)) return false;
+                if (ratingMin > 0 && (row.averageRating === null || row.averageRating < ratingMin)) return false;
                 if (ratingsCountMin > 0 && row.ratingsCount < ratingsCountMin) return false;
 
                 if (isVocabActive) {
@@ -2804,6 +2923,7 @@
             sortRows();
             updateSortUI();
             updateGenreCount(filteredRows.length);
+            updateExcludedGenreCount();
             if (!isInitialLoad) {
                 currentPage = 1;
             }
@@ -2875,22 +2995,40 @@
             allGenres = Array.from(genres);
             allGenres.sort((a, b) => a.localeCompare(b));
             buildGenreFilterOptions(allGenres);
+            buildExcludedGenreFilterOptions(allGenres);
 
             // 尝试恢复保存的类型选择
             const saved = loadFilters();
-            if (saved && saved.selectedGenres) {
-                const savedGenres = new Set(saved.selectedGenres);
-                const inputs = genreFilterListEl.querySelectorAll("input[type='checkbox']");
-                inputs.forEach(input => {
-                    input.checked = savedGenres.has(input.value);
-                    const label = input.closest(".genre-option");
-                    if (input.checked) {
-                        label.classList.add("selected");
-                    } else {
-                        label.classList.remove("selected");
-                    }
-                });
-                selectedGenres = savedGenres;
+            if (saved) {
+                if (saved.selectedGenres) {
+                    const savedGenres = new Set(saved.selectedGenres);
+                    const inputs = genreFilterListEl.querySelectorAll("input[type='checkbox']");
+                    inputs.forEach(input => {
+                        input.checked = savedGenres.has(input.value);
+                        const label = input.closest(".genre-option");
+                        if (input.checked) {
+                            label.classList.add("selected");
+                        } else {
+                            label.classList.remove("selected");
+                        }
+                    });
+                    selectedGenres = savedGenres;
+                }
+                if (saved.excludedGenres) {
+                    const savedExcludedGenres = new Set(saved.excludedGenres);
+                    const inputs = excludedGenreFilterListEl.querySelectorAll("input[type='checkbox']");
+                    inputs.forEach(input => {
+                        input.checked = savedExcludedGenres.has(input.value);
+                        const label = input.closest(".genre-option");
+                        if (input.checked) {
+                            label.classList.add("selected");
+                        } else {
+                            label.classList.remove("selected");
+                        }
+                    });
+                    excludedGenres = savedExcludedGenres;
+                    updateExcludedGenreCount();
+                }
             }
         };
 
@@ -2908,6 +3046,7 @@
                 if (saved) {
                     nameFilterInput.value = saved.name || "";
                     authorFilterInput.value = saved.author || "";
+                    ratingMinInput.value = saved.ratingMin || "";
                     ratingsCountMinInput.value = saved.ratingsCountMin !== undefined ? saved.ratingsCountMin : "30";
                     vocabFilterInput.value = saved.vocab || "";
                     sortKey = saved.sortKey || sortKey;
@@ -2929,6 +3068,7 @@
 
         nameFilterInput.addEventListener("input", applyFilters);
         authorFilterInput.addEventListener("input", applyFilters);
+        ratingMinInput.addEventListener("input", applyFilters);
         ratingsCountMinInput.addEventListener("input", applyFilters);
 
         // Vocab filter events
@@ -2948,6 +3088,11 @@
 
         authorClearBtn.addEventListener("click", () => {
             authorFilterInput.value = "";
+            applyFilters();
+        });
+
+        ratingClearBtn.addEventListener("click", () => {
+            ratingMinInput.value = "";
             applyFilters();
         });
 
@@ -3024,9 +3169,28 @@
             updateSelectedGenresFromUI();
             applyFilters();
         });
+        excludedGenreSelectAllBtn.addEventListener("click", () => {
+            setAllExcludedGenresChecked(true);
+            updateExcludedGenresFromUI();
+            updateExcludedGenreCount();
+            applyFilters();
+        });
+        excludedGenreClearBtn.addEventListener("click", () => {
+            setAllExcludedGenresChecked(false);
+            updateExcludedGenresFromUI();
+            updateExcludedGenreCount();
+            applyFilters();
+        });
         genreFilterListEl.addEventListener("change", (e) => {
             if (e.target.tagName === "INPUT" && e.target.type === "checkbox") {
                 updateSelectedGenresFromUI();
+                applyFilters();
+            }
+        });
+        excludedGenreFilterListEl.addEventListener("change", (e) => {
+            if (e.target.tagName === "INPUT" && e.target.type === "checkbox") {
+                updateExcludedGenresFromUI();
+                updateExcludedGenreCount();
                 applyFilters();
             }
         });
@@ -3035,6 +3199,7 @@
             // 1. 清空所有文本和数字输入
             nameFilterInput.value = "";
             authorFilterInput.value = "";
+            ratingMinInput.value = "";
             ratingsCountMinInput.value = "";
             p95MinInput.value = "";
             p95MaxInput.value = "";
@@ -3045,6 +3210,9 @@
             // 2. 重置类型选择
             setAllGenresChecked(false);
             updateSelectedGenresFromUI();
+            setAllExcludedGenresChecked(false);
+            updateExcludedGenresFromUI();
+            updateExcludedGenreCount();
 
             // 3. 重置范围滑动条到默认边界
             p95MinRange.value = p95Bounds.min;
@@ -3054,7 +3222,7 @@
             syncTextFromRanges();
 
             // 4. 重置排序和页码
-            sortKey = "ratingsCount";
+            sortKey = "averageRating";
             sortDir = "desc";
             currentPage = 1;
 
