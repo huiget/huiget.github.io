@@ -2065,7 +2065,7 @@
                 </div>
                 
                 <div class="setting-group" style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
-                    <label class="setting-label">AI 上下文翻译 (Qwen3-4B)</label>
+                    <label class="setting-label">AI 上下文翻译 (Qwen3.5-4B)</label>
                     <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 8px;">
                         根据句子上下文，将单词翻译为最合适的中文释义
                     </div>
@@ -2675,7 +2675,7 @@
                 this.llmEngine = null;
                 this.llmLoading = false;
                 this.llmEnabled = false;
-                this.llmModelId = 'Qwen3-4B-q4f16_1-MLC';
+                this.llmModelId = 'Qwen3.5-4B-q4f16_1-MLC';
                 
                 // 初始化
                 this._init();
@@ -3063,7 +3063,7 @@
                 // 未缓存，弹窗确认
                 const confirmed = await this.showConfirmDialog({
                     title: '下载 AI 上下文翻译模型',
-                    message: '首次使用需要下载 Qwen3-4B 模型文件（约 2.5 GB）。\n\n下载后将缓存在浏览器中，后续使用无需重复下载。\n\n该模型用于根据句子上下文将单词翻译为最合适的中文释义。\n\n是否立即下载？',
+                    message: '首次使用需要下载 Qwen3.5-4B 模型文件（约 2.5 GB）。\n\n下载后将缓存在浏览器中，后续使用无需重复下载。\n\n该模型用于根据句子上下文将单词翻译为最合适的中文释义。\n\n是否立即下载？',
                     confirmText: '开始下载',
                     cancelText: '取消'
                 });
