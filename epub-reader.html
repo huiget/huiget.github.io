@@ -3184,9 +3184,8 @@
                 try {
                     const contextSentence = sentenceContext.trim();
                     
-                    // Few-Shot prompt for Qwen3，使用 /no_think 禁用思考模式以获得快速直接的回复
-                    const userPrompt = `/no_think
-Task: Translate the target English word into Chinese based on the sentence context. Only output the Chinese translation, nothing else.
+                    // Few-Shot prompt for Qwen3.5，思考模式通过 extra_body.enable_thinking 控制
+                    const userPrompt = `Task: Translate the target English word into Chinese based on the sentence context. Only output the Chinese translation, nothing else.
 
 Sentence: "He runs a software company."
 Target Word: "runs"
@@ -3213,7 +3212,10 @@ Translation:`;
                             { role: 'user', content: userPrompt }
                         ],
                         temperature: 0.1,
-                        max_tokens: 30
+                        max_tokens: 30,
+                        extra_body: {
+                            enable_thinking: false
+                        }
                     });
                     
                     const rawResult = response.choices[0]?.message?.content?.trim();
